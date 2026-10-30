@@ -33,8 +33,8 @@ export function SystemBadge() {
   useEffect(() => { const load = () => api.get("/admin/system-status").then(setD).catch(() => {}); load(); const t = setInterval(load, 60000); return () => clearInterval(t); }, []);
   if (!d) return null;
   const [l, c] = { OPERATIONNEL: ["Système opérationnel", "green"], PERTURBE: ["Service partiellement perturbé", "orange"], INCIDENT_MAJEUR: ["Incident majeur", "red"] }[d.level];
-  return <div style={{ position: "relative" }}><button className={`pill p-${c}`} style={{ cursor: "pointer", padding: "6px 10px" }} onClick={() => setOpen(!open)}><span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 4, background: "currentColor", marginRight: 6 }} />{l}</button>
-    {open && <div className="panel" style={{ position: "absolute", right: 0, top: 38, width: 320, zIndex: 60, boxShadow: "0 16px 40px rgba(0,0,0,.18)" }}>
+  return <div style={{ position: "relative" }}><button className={`pill p-${c} sys-badge`} style={{ cursor: "pointer", padding: "6px 10px" }} onClick={() => setOpen(!open)} aria-label={l} title={l}><span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 4, background: "currentColor", marginRight: 6 }} /><span className="sb-txt">{l}</span></button>
+    {open && <div className="panel bell-pop" style={{ position: "absolute", right: 0, top: 38, width: 320, zIndex: 60, boxShadow: "0 16px 40px rgba(0,0,0,.18)" }}>
       <b>{l}</b>{d.reasons.length ? (d.details ? <ul className="t-s" style={{ margin: "8px 0 0", paddingLeft: 18 }}>{d.reasons.map(r => <li key={r}>{r}</li>)}</ul> : <div className="t-s">Contactez le Support technique.</div>) : <div className="t-s">Aucune anomalie détectée.</div>}</div>}</div>;
 }
 

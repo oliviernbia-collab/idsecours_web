@@ -26,7 +26,7 @@ export function Table({ cols, rows, empty = "Aucune donnée.", keyf = (r, i) => 
   if (!rows) return <Loading />;
   if (!rows.length) return <div className="empty">{empty}</div>;
   return <div className="tbl-wrap"><table className="tbl"><thead><tr>{cols.map(c => <th key={c[0]} style={c[2]}>{c[0]}</th>)}</tr></thead>
-    <tbody>{rows.map((r, i) => <tr key={keyf(r, i)}>{cols.map(c => <td key={c[0]} style={c[2]}>{c[1](r)}</td>)}</tr>)}</tbody></table></div>;
+    <tbody>{rows.map((r, i) => <tr key={keyf(r, i)}>{cols.map(c => <td key={c[0]} style={c[2]} data-label={c[0] || undefined}><div className="cv">{c[1](r)}</div></td>)}</tr>)}</tbody></table></div>;
 }
 
 export function Modal({ title, children, onClose }) {
@@ -34,6 +34,9 @@ export function Modal({ title, children, onClose }) {
   return <div className="modal-bg" onMouseDown={e => e.target === e.currentTarget && onClose()}><div className="modal" role="dialog" aria-modal="true" aria-label={title}>
     <div className="row"><h3 className="grow">{title}</h3><button className="iconbtn" onClick={onClose} aria-label="Fermer"><Icon n="x" s={16} /></button></div>{children}</div></div>;
 }
+
+/* vues liste + détail : sur petit écran le détail passe sous la liste, on y fait défiler */
+export const showDetail = id => { if (window.innerWidth <= 900) setTimeout(() => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 80); };
 
 /* action avec retour visuel + rechargement */
 export function useAct(reload) {

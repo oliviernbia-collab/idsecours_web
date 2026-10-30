@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { adminApi as api } from "../../lib/api.js";
 import Icon from "../../ui/Icon.jsx";
-import { Page, Panel, Table, Modal, P, useData, useAct, useAdm, Loading, csv } from "../kit.jsx";
+import { Page, Panel, Table, Modal, P, useData, useAct, useAdm, Loading, csv, showDetail } from "../kit.jsx";
 import { COMMUNES, COORDS } from "@shared/constants.js";
 import { AgencyMap, AG_ST } from "./supervision.jsx";
 import { fmtDT, fcfa } from "@shared/format.js";
@@ -38,10 +38,10 @@ export function Roles() {
   const role = d.roles.find(r => r.id === sel), modules = [...new Set(d.perms.map(p => p.module))];
   return <Page title="Rôles & permissions" sub="Principe de séparation des pouvoirs : un même agent ne réalise jamais seul une opération sensible.">
     <div className="grid-2" style={{ gridTemplateColumns: "minmax(240px,1fr) 3fr" }}>
-      <Panel title="Rôles" ic="key"><div className="list" style={{ boxShadow: "none" }}>{d.roles.map(r => <button key={r.id} className="li" style={{ background: sel === r.id ? "var(--soft)" : undefined }} onClick={() => { setSel(r.id); setPerms(r.perms); }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: r.color }} /><div className="grow"><b>{r.label}</b><div className="t-s">{r.perms.length} permission(s)</div></div></button>)}</div></Panel>
-      {role && <Panel title={role.label} ic="userShield" right={role.code !== "SUPER_ADMIN" && <button className="btn sm red" onClick={() => act(() => api.put(`/admin/roles/${role.id}`, { perms }), "Permissions enregistrées.")}>Enregistrer</button>}>
+      <Panel title="Rôles" ic="key"><div className="list" style={{ boxShadow: "none" }}>{d.roles.map(r => <button key={r.id} className="li" style={{ background: sel === r.id ? "var(--soft)" : undefined }} onClick={() => { setSel(r.id); setPerms(r.perms); showDetail("role-detail"); }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: r.color }} /><div className="grow"><b>{r.label}</b><div className="t-s">{r.perms.length} permission(s)</div></div></button>)}</div></Panel>
+      {role && <div id="role-detail" style={{ minWidth: 0, scrollMarginTop: 70 }}><Panel title={role.label} ic="userShield" right={role.code !== "SUPER_ADMIN" && <button className="btn sm red" onClick={() => act(() => api.put(`/admin/roles/${role.id}`, { perms }), "Permissions enregistrées.")}>Enregistrer</button>}>
         {role.code === "SUPER_ADMIN" && <div className="note n-orange" style={{ marginBottom: 10 }}><Icon n="lock" s={16} /><span>Les droits du Super Admin ne sont pas modifiables.</span></div>}
-        {modules.map(m => <div key={m} style={{ marginBottom: 12 }}><div className="t-label" style={{ marginBottom: 6 }}>{m}</div><div className="perm-grid">{d.perms.filter(p => p.module === m).map(p => <label key={p.code} className="chk"><input type="checkbox" disabled={role.code === "SUPER_ADMIN"} checked={perms.includes(p.code)} onChange={e => setPerms(e.target.checked ? [...perms, p.code] : perms.filter(x => x !== p.code))} />{p.label}</label>)}</div></div>)}</Panel>}
+        {modules.map(m => <div key={m} style={{ marginBottom: 12 }}><div className="t-label" style={{ marginBottom: 6 }}>{m}</div><div className="perm-grid">{d.perms.filter(p => p.module === m).map(p => <label key={p.code} className="chk"><input type="checkbox" disabled={role.code === "SUPER_ADMIN"} checked={perms.includes(p.code)} onChange={e => setPerms(e.target.checked ? [...perms, p.code] : perms.filter(x => x !== p.code))} />{p.label}</label>)}</div></div>)}</Panel></div>}
     </div>
   </Page>;
 }

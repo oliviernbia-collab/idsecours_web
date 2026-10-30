@@ -114,7 +114,7 @@ function StaffBell() {
   const C = { CRITIQUE: "red", HAUTE: "orange", NORMALE: "blue" };
   return <div style={{ position: "relative" }}>
     <button className="bell" onClick={() => setOpen(!open)} aria-label="Notifications"><Icon n="bell" s={19} />{d && d.unread ? <span className="bdg">{d.unread}</span> : null}</button>
-    {open && d && <div className="panel" style={{ position: "absolute", right: 0, top: 50, width: 400, maxHeight: 480, overflowY: "auto", zIndex: 60, boxShadow: "0 16px 40px rgba(0,0,0,.18)", padding: 0 }}>
+    {open && d && <div className="panel bell-pop" style={{ position: "absolute", right: 0, top: 50, width: 400, maxHeight: 480, overflowY: "auto", zIndex: 60, boxShadow: "0 16px 40px rgba(0,0,0,.18)", padding: 0 }}>
       <div className="row" style={{ padding: "12px 14px", borderBottom: "1px solid var(--line)" }}><b className="grow">Alertes et notifications</b>{d.unread > 0 && <button className="btn sm ghost" onClick={async () => { await adminApi.post("/admin/notifications/read", {}); load(); }}>Tout lire</button>}</div>
       {d.items.length ? d.items.map(n => <button key={n.id} className="li" style={{ opacity: n.resolved ? .55 : 1 }} onClick={() => go(n)}>
         <span className={`pill p-${n.resolved ? "grey" : C[n.priority]}`} style={{ alignSelf: "flex-start" }}>{n.resolved ? "Résolue" : n.priority}</span>

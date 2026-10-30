@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { adminApi as api } from "../../lib/api.js";
 import Icon from "../../ui/Icon.jsx";
-import { Page, Panel, Table, Modal, Kpi, P, Bars, HBars, useData, useAct, useAdm, Loading, csv } from "../kit.jsx";
+import { Page, Panel, Table, Modal, Kpi, P, Bars, HBars, useData, useAct, useAdm, Loading, csv, showDetail } from "../kit.jsx";
 import { DOC_ST, TRIG, C_ST, FLOW, ECOSYSTEM } from "@shared/constants.js";
 import { FinDay } from "./cash.jsx";
 import { PeriodPanel, AgencyMap } from "./supervision.jsx";
@@ -271,11 +271,11 @@ export function Messages() {
   const act = useAct(() => { reloadC(); reloadL(); });
   return <Page title="Messagerie des dossiers" sub="ID SECOURS reste l’intermédiaire : aucune coordonnée privée n’est échangée entre les parties.">
     <div className="grid-2" style={{ gridTemplateColumns: "minmax(280px,1fr) 2fr" }}>
-      <Panel title="Conversations" ic="msg"><div className="list" style={{ boxShadow: "none" }}>{!list ? <Loading /> : list.items.map(c => <button key={c.ref} className="li" style={{ background: ref === c.ref ? "var(--soft)" : undefined }} onClick={() => setRef(c.ref)}><div className="grow"><div className="mono" style={{ fontWeight: 700, fontSize: 12.5 }}>{c.ref}</div><div className="t-s" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.last}</div></div>{+c.unread > 0 && <span className="pill p-red">{c.unread}</span>}</button>)}</div></Panel>
-      <Panel title={ref || "Sélectionnez une conversation"} ic="msg">{ref && conv && conv.items && <div className="col" style={{ gap: 8 }}>
+      <Panel title="Conversations" ic="msg"><div className="list" style={{ boxShadow: "none" }}>{!list ? <Loading /> : list.items.map(c => <button key={c.ref} className="li" style={{ background: ref === c.ref ? "var(--soft)" : undefined }} onClick={() => { setRef(c.ref); showDetail("msg-detail"); }}><div className="grow"><div className="mono" style={{ fontWeight: 700, fontSize: 12.5 }}>{c.ref}</div><div className="t-s" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.last}</div></div>{+c.unread > 0 && <span className="pill p-red">{c.unread}</span>}</button>)}</div></Panel>
+      <div id="msg-detail" style={{ minWidth: 0, scrollMarginTop: 70 }}><Panel title={ref || "Sélectionnez une conversation"} ic="msg">{ref && conv && conv.items && <div className="col" style={{ gap: 8 }}>
         <div className="col" style={{ gap: 8, maxHeight: 480, overflowY: "auto", padding: 4 }}>{conv.items.map(m => <div key={m.id} className={`bubble ${m.sender === "USER" ? "them" : "me"}`}>{m.kind === "file" ? <a href={api.fileUrl(m.file_url)} target="_blank" rel="noreferrer" style={{ color: "inherit" }}><Icon n="clip" s={12} /> {m.file_name}</a> : m.kind === "voice" ? <audio controls src={api.fileUrl(m.file_url)} className="audio" /> : m.body}<small>{m.sender === "USER" ? "Usager" : m.agent ? "Agent " + m.agent : "ID SECOURS"} · {fmtDT(m.created_at)}</small></div>)}</div>
         <div className="row"><input className="inp" placeholder="Votre réponse" value={text} onChange={e => setText(e.target.value)} onKeyDown={async e => { if (e.key === "Enter" && text.trim()) { await act(() => api.post(`/admin/messages/${ref}`, { text })); setText(""); } }} />
-          <button className="btn green" disabled={!text.trim()} onClick={async () => { await act(() => api.post(`/admin/messages/${ref}`, { text })); setText(""); }}><Icon n="send" s={15} /> Envoyer</button></div></div>}</Panel>
+          <button className="btn green" disabled={!text.trim()} onClick={async () => { await act(() => api.post(`/admin/messages/${ref}`, { text })); setText(""); }}><Icon n="send" s={15} /> Envoyer</button></div></div>}</Panel></div>
     </div>
   </Page>;
 }
