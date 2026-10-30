@@ -9,7 +9,7 @@ export const useAdm = () => useContext(AdmCtx);
 export function useData(path, deps = [], poll) {
   const { toast } = useAdm();
   const [data, setData] = useState(null);
-  const load = useCallback(() => adminApi.get(path).then(setData).catch(e => toast(e.message, "alert")), [path, ...deps]); // eslint-disable-line react-hooks/exhaustive-deps
+  const load = useCallback(() => !path ? Promise.resolve() : adminApi.get(path).then(setData).catch(e => toast(e.message, "alert")), [path, ...deps]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { load(); if (!poll) return; const t = setInterval(load, poll); return () => clearInterval(t); }, [load, poll]);
   return [data, load];
 }
@@ -18,7 +18,7 @@ export const Page = ({ title, sub, actions, children }) => <>
   <div className="adm-h"><div><h1>{title}</h1>{sub && <p>{sub}</p>}</div>{actions && <div className="act">{actions}</div>}</div>{children}
 </>;
 export const Panel = ({ title, ic, children, right, style }) => <div className="panel" style={style}>{title && <h3>{ic && <Icon n={ic} s={16} />}{title}<span style={{ marginLeft: "auto" }}>{right}</span></h3>}{children}</div>;
-export const Kpi = ({ ic, label, value, color = "var(--blue)", bg = "var(--blue-s)" }) => <div className="kpi"><span className="ic" style={{ background: bg, color }}><Icon n={ic} s={18} /></span><div><b>{value ?? "—"}</b><span>{label}</span></div></div>;
+export const Kpi = ({ ic, label, value, color = "var(--blue)", bg = "var(--blue-s)" }) => <div className="kpi"><span className="ic" style={{ background: bg, color }}><Icon n={ic} s={18} /></span><div><b className={typeof value === "string" && value.length > 9 ? "long" : undefined}>{value ?? "—"}</b><span>{label}</span></div></div>;
 export const P = ({ c = "grey", children }) => <span className={`pill p-${c}`}>{children}</span>;
 export const Loading = () => <div className="loading"><div className="spinner" /></div>;
 

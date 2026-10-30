@@ -75,7 +75,7 @@ export function FinDay({ bar }) {
       <Kpi ic="shield" label="Recettes abonnements" value={fcfa(t.abonnements)} color="var(--blue-d)" bg="var(--blue-s)" /><Kpi ic="refresh" label="Renouvellements" value={fcfa(t.renouvellements)} color="var(--blue-d)" bg="var(--blue-s)" />
       <Kpi ic="hand" label="Récupération & livraison" value={fcfa(t.recuperation)} color="var(--orange)" bg="var(--orange-s)" /><Kpi ic="money" label="Dont espèces" value={fcfa(t.especes)} color="var(--ink)" bg="var(--soft)" />
       <Kpi ic="money" label="Total brut" value={fcfa(t.brut)} color="var(--green-d)" bg="var(--green-s)" /><Kpi ic="x" label="Remboursements" value={fcfa(t.remboursements)} color="var(--red)" bg="var(--red-s)" />
-      <Kpi ic="sliders" label="Frais de paiement (estimés)" value={fcfa(t.frais_paiement)} /><Kpi ic="check" label="Total net" value={fcfa(t.net)} color="var(--green-d)" bg="var(--green-s)" />
+      <Kpi ic="sliders" label="Frais de paiement (estimés)" value={fcfa(t.frais_paiement)} color="var(--violet)" bg="var(--violet-s)" /><Kpi ic="check" label="Total net" value={fcfa(t.net)} color="var(--green-d)" bg="var(--green-s)" />
     </div>
     <Panel title="Anomalies" ic="alert"><dl className="kv"><dt>Transactions en attente</dt><dd>{t.en_attente}</dd><dt>Transactions échouées</dt><dd>{t.echouees}</dd><dt>Écarts de rapprochement ouverts</dt><dd>{t.ecarts_ouverts}</dd><dt>Caisses non contrôlées</dt><dd>{t.caisses_non_controlees}</dd></dl>
       {!d.closure && <>{anomalies > 0 && <div className="field" style={{ marginTop: 10 }}><label>Commentaire (obligatoire : clôture avec anomalies)</label><input className="inp" value={note} onChange={e => setNote(e.target.value)} /></div>}

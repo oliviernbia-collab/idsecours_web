@@ -1,5 +1,6 @@
-/* Client API partagé (web + mobile). `storage` : { get(k), set(k, v), del(k) } (synchrone ou asynchrone). */
-export function createApi({ baseUrl, storage }) {
+/* Client API partagé (web + mobile). `storage` : { get(k), set(k, v), del(k) } (synchrone ou asynchrone).
+   `sendForm` (facultatif) : transport des envois FormData, avec la même signature que fetch. */
+export function createApi({ baseUrl, storage, sendForm }) {
   let token = null, onUnauthorized = null;
   const ACCESS = "ids_access"; // jetons d'accès des dossiers ouverts sans compte
 
@@ -15,7 +16,7 @@ export function createApi({ baseUrl, storage }) {
     if (body instanceof FormData) payload = body;
     else if (body !== undefined) { headers["content-type"] = "application/json"; payload = JSON.stringify(body); }
     let res;
-    try { res = await fetch(baseUrl + path, { method, headers, body: payload }); }
+    try { res = await (sendForm && payload instanceof FormData ? sendForm : fetch)(baseUrl + path, { method, headers, body: payload }); }
     catch { throw Object.assign(new Error("Connexion impossible. Vérifiez votre réseau."), { status: 0 }); }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {

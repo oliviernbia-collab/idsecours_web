@@ -5,6 +5,8 @@
   --green:#13A043; --green-d:#0B7A32; --green-s:#E7F6EC;
   --blue:#1A7EE0; --blue-d:#1262B3; --blue-s:#E7F1FC;
   --orange:#F28C12; --orange-s:#FEF2E2;
+  --violet:#7C3AED; --violet-d:#5B21B6; --violet-s:#F1EAFE;
+  --teal:#0E9F9A; --teal-d:#0B7A76; --teal-s:#E0F5F4;
   --ink:#16201B; --ink2:#3B4742; --muted:#6A7570; --line:#E3E8E5; --soft:#F3F6F4; --card:#FFFFFF;
   --stage:#EDF1EE;
   --f-display:"Poppins","Segoe UI",system-ui,sans-serif;
@@ -105,6 +107,8 @@ input,select,textarea{font:inherit;color:var(--ink)}
 .p-blue{background:var(--blue-s);color:var(--blue-d)}
 .p-orange{background:var(--orange-s);color:#A85A00}
 .p-grey{background:var(--soft);color:var(--muted)}
+.p-violet{background:var(--violet-s);color:var(--violet-d)}
+.p-teal{background:var(--teal-s);color:var(--teal-d)}
 .p-dark{background:var(--ink);color:#fff}
 .list{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
 .li{display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid var(--line);width:100%;text-align:left}
@@ -227,6 +231,8 @@ textarea.inp{padding:11px 13px;min-height:78px;resize:vertical}
 .sheet .grab{width:42px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 12px}
 .toast{position:absolute;left:14px;right:14px;bottom:92px;z-index:120;background:var(--ink);color:#fff;border-radius:14px;padding:12px 14px;font-size:13.5px;display:flex;gap:10px;align-items:center;transform:translateY(20px);opacity:0;transition:all .25s;pointer-events:none}
 .toast.on{transform:none;opacity:1}
+.toast.t-ok{background:var(--green-d)}
+.toast.t-err{background:var(--red)}
 .push{visibility:hidden;position:absolute;left:10px;right:10px;top:8px;z-index:110;background:rgba(255,255,255,.97);backdrop-filter:blur(8px);border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:11px 12px;display:flex;gap:10px;align-items:flex-start;transform:translateY(-130%);transition:transform .3s cubic-bezier(.2,.8,.2,1);text-align:left;width:auto}
 .push.on{transform:none;visibility:visible}
 .push img{width:34px;height:34px;flex:none}

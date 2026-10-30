@@ -18,7 +18,8 @@ export function Dashboard() {
   if (!s) return <Loading />;
   return s.global ? <GlobalDashboard /> : <ServiceDashboard s={s} />;
 }
-const KC = { blue: ["var(--blue)", "var(--blue-s)"], green: ["var(--green-d)", "var(--green-s)"], orange: ["var(--orange)", "var(--orange-s)"], red: ["var(--red)", "var(--red-s)"] };
+const KC = { blue: ["var(--blue)", "var(--blue-s)"], green: ["var(--green-d)", "var(--green-s)"], orange: ["var(--orange)", "var(--orange-s)"], red: ["var(--red)", "var(--red-s)"],
+  violet: ["var(--violet)", "var(--violet-s)"], teal: ["var(--teal-d)", "var(--teal-s)"] };
 function AlertsPanel() {
   const [n] = useData("/admin/notifications", [], 30000);
   const nav = useNavigate();
@@ -99,11 +100,11 @@ function Transactions({ bar }) {
     actions={<div className="filters"><input className="inp" type="date" value={from} onChange={e => setFrom(e.target.value)} aria-label="Du" /><input className="inp" type="date" value={to} onChange={e => setTo(e.target.value)} aria-label="Au" />{d && <button className="btn sm ghost" onClick={() => csv("transactions", d.items, cols)}><Icon n="download" s={14} /> Export comptable</button>}</div>}>
     {bar}
     {!d ? <Loading /> : <>
-      <div className="kpis"><Kpi ic="money" label="Encaissé" value={fcfa(d.totals.ok)} color="var(--green-d)" bg="var(--green-s)" /><Kpi ic="refresh" label="Remboursé" value={fcfa(d.totals.refunded)} color="var(--red)" bg="var(--red-s)" /><Kpi ic="clock" label="Transactions en attente" value={d.totals.pending} color="var(--orange)" bg="var(--orange-s)" /></div>
-      <div className="grid-2"><Panel title="Revenus par type" ic="chart"><HBars data={d.byKind.map(x => ({ l: KIND[x.kind], v: +x.total }))} color="#0B7A32" /></Panel><Panel title="Revenus par moyen de paiement" ic="money"><HBars data={d.byMethod.map(x => ({ l: x.label, v: x.total }))} color="#1A7EE0" /></Panel></div>
+      <div className="kpis"><Kpi ic="money" label="Encaissé" value={fcfa(d.totals.ok)} color="var(--green-d)" bg="var(--green-s)" /><Kpi ic="refresh" label="Remboursé" value={fcfa(d.totals.refunded)} color="var(--red)" bg="var(--red-s)" /><Kpi ic="clock" label="Transactions en attente" value={d.totals.pending} color="var(--violet)" bg="var(--violet-s)" /></div>
+      <div className="grid-2"><Panel title="Revenus par type" ic="chart"><HBars data={d.byKind.map(x => ({ l: KIND[x.kind], v: +x.total }))} color="#0B7A32" /></Panel><Panel title="Revenus par moyen de paiement" ic="money"><HBars data={d.byMethod.map(x => ({ l: x.label, v: x.total }))} color="#7C3AED" /></Panel></div>
       <Panel title="Transactions"><Table rows={d.items} cols={[["Référence", r => <span className="mono">{r.ref}</span>], ["Date", r => fmtDT(r.created_at)], ["Objet", r => <>{r.label}<div className="t-s">{KIND[r.kind]}</div></>], ["Client", r => r.prenom ? `${r.prenom} ${r.nom}` : <span className="t-s">Sans compte</span>], ["Moyen", r => r.method],
         ["Montant", r => <><b className="num">{fcfa(r.amount)}</b>{r.refunded_amount > 0 && r.status !== "REMBOURSÉ" && <div className="t-s">dont {fcfa(r.refunded_amount)} remboursés</div>}</>], ["Statut", r => <P c={{ "RÉUSSI": "green", "EN ATTENTE": "orange", "ÉCHOUÉ": "red", "REMBOURSÉ": "grey" }[r.status]}>{r.status}</P>],
-        ["Rapprochement", r => r.reconciled ? <P c={{ "RAPPROCHÉ": "green", "À RAPPROCHER": "orange", "ÉCART": "red" }[r.reconciled]}>{r.reconciled}</P> : <span className="t-s">—</span>],
+        ["Rapprochement", r => r.reconciled ? <P c={{ "RAPPROCHÉ": "green", "À RAPPROCHER": "teal", "ÉCART": "red" }[r.reconciled]}>{r.reconciled}</P> : <span className="t-s">—</span>],
         ["", r => <div className="acts">{can("billing.view") && ["RÉUSSI", "REMBOURSÉ"].includes(r.status) && <button className="btn sm ghost" onClick={() => api.get(`/admin/finance/${r.ref}/invoice`).then(x => setInv(x.invoice)).catch(() => {})}><Icon n="invoice" s={13} /> Facture</button>}
           {can("finance.refund") && r.status === "RÉUSSI" && <button className="btn sm ghost" onClick={() => { setMotif(""); setAmount(String(r.amount - (r.refunded_amount || 0))); setM(r); }}>Demander un remboursement</button>}</div>]]} /></Panel></>}
     {inv && <Modal title={`Facture ${inv.numero}`} onClose={() => setInv(null)}>
@@ -153,7 +154,7 @@ function Reconciliations({ bar }) {
   return <Page title="Rapprochements" sub="Comparaison des transactions ID SECOURS avec les relevés des opérateurs Mobile Money, prestataires, banque et caisse agence"
     actions={<button className="btn sm red" onClick={() => setImp({ source: "OM", csv: "" })}><Icon n="upload" s={14} /> Importer un relevé</button>}>
     {bar}
-    {d && <div className="kpis"><Kpi ic="check" label={`Transactions rapprochées · ${pct} %`} value={d.totals.ok} color="var(--green-d)" bg="var(--green-s)" /><Kpi ic="clock" label="En attente de rapprochement" value={d.totals.pending} color="var(--orange)" bg="var(--orange-s)" /><Kpi ic="alert" label="Écarts à analyser" value={d.totals.gaps} color="var(--red)" bg="var(--red-s)" /></div>}
+    {d && <div className="kpis"><Kpi ic="check" label={`Transactions rapprochées · ${pct} %`} value={d.totals.ok} color="var(--green-d)" bg="var(--green-s)" /><Kpi ic="clock" label="En attente de rapprochement" value={d.totals.pending} color="var(--teal-d)" bg="var(--teal-s)" /><Kpi ic="alert" label="Écarts à analyser" value={d.totals.gaps} color="var(--red)" bg="var(--red-s)" /></div>}
     <Panel title="Relevés importés"><Table rows={d && d.batches} empty="Aucun relevé importé." cols={[["Rapprochement", b => <span className="mono">{b.ref}</span>], ["Source", b => b.source], ["Période", b => b.date_from ? `${fmtD(b.date_from)} → ${fmtD(b.date_to)}` : "—"],
       ["Lignes", b => b.lines_total], ["Rapprochées", b => <P c="green">{b.matched}</P>], ["À rapprocher", b => b.pending ? <P c="orange">{b.pending}</P> : 0], ["Écarts", b => b.gaps ? <P c="red">{b.gaps}</P> : 0], ["Par", b => `${b.prenom} ${b.nom} · ${fmtDT(b.created_at)}`],
       ["", b => <div className="acts"><button className="btn sm ghost" onClick={() => open(b.ref)}>Voir le détail</button></div>]]} /></Panel>
@@ -192,6 +193,39 @@ function Gaps({ bar }) {
   </Page>;
 }
 
+/* portefeuille (Commercial §17) */
+const PF = { PROSPECT: ["Prospect", "grey"], CLIENT: ["Client", "green"], ANCIEN_CLIENT: ["Ancien client", "orange"] };
+
+/* renouvellements (Commercial §25–§28) : échéances, relance manuelle ou automatique, message paramétrable, historique */
+function Renewals({ d, reload }) {
+  const { can } = useAdm();
+  const [tab, setTab] = useState("due"), [msg, setMsg] = useState(null), [ech, setEch] = useState("");
+  const [h, reloadH] = useData(tab === "history" ? "/admin/commercial/reminders" : null, [tab]);
+  const act = useAct(() => { reload(); reloadH(); });
+  const edit = can("settings.manage") || can("prospects.manage");
+  const rows = d.renew.filter(r => ech === "" || String(r.bucket.k) === ech);
+  const counts = k => d.renew.filter(r => r.bucket.k === k).length;
+  return <Panel title="Renouvellements" ic="refresh" right={<div className="chips" style={{ margin: 0 }}>{[["due", "À renouveler"], ["history", "Historique des relances"]].map(([k, l]) => <button key={k} className={`chip ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>}>
+    {tab === "due" && <>
+      <div className="chips"><button className={`chip ${ech === "" ? "on" : ""}`} onClick={() => setEch("")}>Toutes · {d.renew.length}</button>
+        {[...d.echeances.filter(e => e > 0).sort((a, b) => b - a).map(e => [String(e), `Dans ${e} jours`]), ["0", "Aujourd’hui"], ["-1", "Expirés"]].map(([k, l]) => <button key={k} className={`chip ${ech === k ? "on" : ""}`} onClick={() => setEch(k)}>{l} · {counts(+k)}</button>)}</div>
+      <Table rows={rows} empty="Aucun abonnement à cette échéance." cols={[["Référence", r => <span className="mono">PROT-{String(r.id).padStart(5, "0")}</span>], ["Client", r => <>{r.prenom} {r.nom}<div className="t-s">{fmtTel(r.tel)}</div></>], ["Formule", r => r.label], ["Échéance", r => fmtD(r.exp_at)],
+        ["Statut", r => <P c={r.bucket.c}>{r.bucket.l}</P>], ["Relances", r => r.reminders ? <span className="t-s">{r.reminders} · dernière le {fmtDT(r.last_reminder)}</span> : <span className="t-s">Aucune</span>],
+        ["", r => <div className="acts"><button className="btn sm ghost" onClick={() => act(() => api.post(`/admin/commercial/remind/${r.id}`), "Relance envoyée (notification + SMS) · historisée.")}><Icon n="send" s={13} /> Relancer</button></div>]]} />
+      <div className="note n-blue"><Icon n="clock" s={16} /><span>Relances automatiques {d.renewAuto ? <b>activées</b> : <b>désactivées</b>} : une seule relance par échéance ({d.echeances.filter(e => e > 0).map(e => `J-${e}`).join(", ")}{d.echeances.includes(0) ? ", jour J" : ""}), inscrite dans l’historique comme « Automatisation ». Échéances réglables dans Paramètres système (renew_echeances).</span></div>
+      {edit && <div className="row" style={{ gap: 8, flexWrap: "wrap" }}><button className="btn sm ghost" onClick={() => setMsg(d.renewMessage)}><Icon n="edit" s={13} /> Modifier le message</button>
+        <button className="btn sm ghost" onClick={() => act(() => api.put("/admin/commercial/renew-settings", { auto: !d.renewAuto }), d.renewAuto ? "Relances automatiques désactivées." : "Relances automatiques activées.")}>{d.renewAuto ? "Désactiver" : "Activer"} les relances automatiques</button></div>}
+    </>}
+    {tab === "history" && <Table rows={h && h.items} empty="Aucune relance envoyée." cols={[["Date", r => fmtDT(r.created_at)], ["Client", r => `${r.prenom} ${r.nom}`], ["Canal", r => r.channel], ["Campagne", r => r.campaign_ref ? <span className="mono">{r.campaign_ref}</span> : "—"],
+      ["Échéance", r => r.echeance == null ? "—" : r.echeance === 0 ? "Jour J" : `J-${r.echeance}`], ["Message", r => <span className="t-s">{r.message}</span>], ["Résultat", r => <P c={/^Envoy/.test(r.result) ? "green" : "orange"}>{r.result}</P>], ["Origine", r => r.auto ? <P c="blue">Automatisation</P> : r.origine]]} />}
+    {msg != null && <Modal title="Message de renouvellement" onClose={() => setMsg(null)}>
+      <div className="field"><label>Modèle (notification et SMS)</label><textarea className="inp" rows={5} value={msg} onChange={e => setMsg(e.target.value)} /></div>
+      <div className="t-s">Variables : <span className="mono">{"{prenom}"}</span>, <span className="mono">{"{nom}"}</span>, <span className="mono">{"{formule}"}</span>, <span className="mono">{"{date}"}</span> (obligatoire : date d’expiration).</div>
+      <div className="note n-blue"><Icon n="eye" s={16} /><span>Aperçu : {msg.replace(/\{prenom\}/g, "Koffi").replace(/\{nom\}/g, "Kouadio").replace(/\{formule\}/g, "Pack ID SECOURS").replace(/\{date\}/g, "30/09/2026")}</span></div>
+      <button className="btn red" disabled={!msg.includes("{date}")} onClick={async () => { if (await act(() => api.put("/admin/commercial/renew-settings", { message: msg }), "Message enregistré · journalisé.")) setMsg(null); }}>Enregistrer</button></Modal>}
+  </Panel>;
+}
+
 export function Commercial() {
   const [d, reload] = useData("/admin/commercial");
   const { can } = useAdm();
@@ -203,8 +237,10 @@ export function Commercial() {
   return <Page title="Abonnements & prospects" sub="Le service commercial ne peut jamais enregistrer de documents à la place d’un abonné."
     actions={can("prospects.manage") && <button className="btn sm red" onClick={() => newSub()}><Icon n="plus" s={14} /> Créer un nouvel abonné</button>}>
     {!d ? <Loading /> : <>
+      <div className="kpis"><Kpi ic="user" label={`Prospects · sans abonnement actif${d.portfolio.prospectsFiches ? ` (+ ${d.portfolio.prospectsFiches} fiche(s) prospect)` : ""}`} value={d.portfolio.prospects} color="var(--ink)" bg="var(--soft)" />
+        <Kpi ic="users" label="Clients · abonnement actif" value={d.portfolio.clients} color="var(--green-d)" bg="var(--green-s)" /><Kpi ic="clock" label="Anciens clients · non renouvelés" value={d.portfolio.anciens} color="var(--orange)" bg="var(--orange-s)" /></div>
       <div className="kpis">{d.byKind.map(k => <Kpi key={k.kind} ic={k.kind === "FORMULE" ? "crown" : k.kind === "PACK" ? "shieldck" : "doc"} label={{ INDIV: "Protections individuelles actives", PACK: "Packs actifs", FORMULE: "Formules actives" }[k.kind]} value={k.n} color="var(--green-d)" bg="var(--green-s)" />)}</div>
-      <Panel title={`Abonnements à renouveler (45 jours) · ${d.renew.length}`} ic="refresh"><Table rows={d.renew} empty="Aucun renouvellement à prévoir." cols={[["Client", r => `${r.prenom} ${r.nom}`], ["Téléphone", r => fmtTel(r.tel)], ["Protection", r => r.label], ["Expire le", r => fmtD(r.exp_at)], ["", r => <div className="acts"><button className="btn sm ghost" onClick={() => act(() => api.post(`/admin/commercial/remind/${r.id}`), "Relance envoyée (notification + SMS).")}><Icon n="send" s={13} /> Relancer</button></div>]]} /></Panel>
+      <Renewals d={d} reload={reload} />
       <Panel title="Abonnements" ic="shield"><Table rows={d.prots} cols={[["Client", r => `${r.prenom} ${r.nom}`], ["Protection", r => r.label], ["Tarif", r => fcfa(r.prix)], ["Début", r => fmtD(r.start_at)], ["Expiration", r => fmtD(r.exp_at)], ["Statut", r => <P c={r.status.c}>{r.status.l}</P>]]} /></Panel>
       {can("prospects.manage") && <Panel title="Prospects" ic="handshake" right={<button className="btn sm red" onClick={() => setF({ nom: "", tel: "", email: "", source: "Terrain", notes: "" })}><Icon n="plus" s={13} /> Nouveau prospect</button>}>
         <Table rows={pr && pr.items} cols={[["Prospect", r => <b>{r.nom}</b>], ["Contact", r => <>{r.tel}<div className="t-s">{r.email}</div></>], ["Source", r => r.source], ["Notes", r => <span className="t-s">{r.notes}</span>],
@@ -261,11 +297,17 @@ export function SosMonitor() {
 export function Incidents() {
   const [d, reload] = useData("/admin/incidents");
   const [ag] = useData("/admin/agencies");
-  const [f, setF] = useState(null);
+  const [f, setF] = useState(null), [rep, setRep] = useState(null);
   const act = useAct(reload);
   return <Page title="Incidents & amélioration continue" sub="Anomalies opérationnelles, partenaires, agences, sécurité · résolution par le Support technique" actions={<button className="btn sm red" onClick={() => setF({ titre: "", description: "", priorite: "NORMALE", dossier: "", agency: "" })}><Icon n="plus" s={14} /> Déclarer un incident</button>}>
-    <Panel><Table rows={d && d.items} empty="Aucun incident." cols={[["Réf.", r => <span className="mono">{r.ref}</span>], ["Incident", r => <><b>{r.titre}</b><div className="t-s">{r.description}</div></>], ["Agence", r => r.agence || "—"], ["Dossier", r => r.dossier_ref || "—"], ["Priorité", r => <P c={{ BASSE: "grey", NORMALE: "blue", HAUTE: "orange", CRITIQUE: "red" }[r.priorite]}>{r.priorite}</P>],
-      ["Créé par", r => <>{r.prenom} {r.nom}<div className="t-s">{fmtDT(r.created_at)}</div></>], ["Statut", r => <select className="inp" style={{ minHeight: 34, width: "auto" }} value={r.statut} onChange={e => act(() => api.patch(`/admin/incidents/${r.ref}`, { statut: e.target.value }), "Statut mis à jour.")}>{["OUVERT", "EN COURS", "RÉSOLU", "CLÔTURÉ"].map(s => <option key={s}>{s}</option>)}</select>]]} /></Panel>
+    <Panel><Table rows={d && d.items} empty="Aucun incident." cols={[["Réf.", r => <span className="mono">{r.ref}</span>], ["Incident", r => <>{r.kind === "ASSISTANCE" && <P c="violet">Assistance agence · {r.categorie}</P>}<div><b>{r.titre}</b></div><div className="t-s">{r.description}</div>{r.reponse && <div className="t-s" style={{ color: "var(--green-d)" }}>Réponse : {r.reponse}</div>}</>], ["Agence", r => r.agence || "—"], ["Dossier", r => r.dossier_ref || "—"], ["Priorité", r => <P c={{ BASSE: "grey", NORMALE: "blue", HAUTE: "orange", CRITIQUE: "red" }[r.priorite]}>{r.priorite}</P>],
+      ["Créé par", r => <>{r.prenom} {r.nom}<div className="t-s">{fmtDT(r.created_at)}</div></>], ["Statut", r => <select className="inp" style={{ minHeight: 34, width: "auto" }} value={r.statut} onChange={e => act(() => api.patch(`/admin/incidents/${r.ref}`, { statut: e.target.value }), "Statut mis à jour.")}>{["OUVERT", "EN COURS", "RÉSOLU", "CLÔTURÉ"].map(s => <option key={s}>{s}</option>)}</select>],
+      ["", r => r.kind === "ASSISTANCE" ? <button className="btn sm ghost" onClick={() => setRep({ ref: r.ref, titre: r.titre, reponse: r.reponse || "", statut: r.statut === "OUVERT" ? "EN COURS" : r.statut })}><Icon n="send" s={13} /> Répondre</button> : null]]} /></Panel>
+    {rep && <Modal title={`Répondre · ${rep.ref}`} onClose={() => setRep(null)}>
+      <div className="t-s">{rep.titre}</div>
+      <div className="field"><label>Réponse à l’agent</label><textarea className="inp" rows={4} value={rep.reponse} onChange={e => setRep({ ...rep, reponse: e.target.value })} /></div>
+      <div className="field"><label>Statut</label><select className="inp" value={rep.statut} onChange={e => setRep({ ...rep, statut: e.target.value })}>{["OUVERT", "EN COURS", "RÉSOLU", "CLÔTURÉ"].map(s => <option key={s}>{s}</option>)}</select></div>
+      <button className="btn red" disabled={!rep.reponse.trim()} onClick={async () => { if (await act(() => api.patch(`/admin/incidents/${rep.ref}`, { statut: rep.statut, reponse: rep.reponse }), "Réponse envoyée à l’agent.")) setRep(null); }}>Envoyer la réponse</button></Modal>}
     {f && <Modal title="Déclarer un incident" onClose={() => setF(null)}>
       <div className="field"><label>Titre</label><input className="inp" value={f.titre} onChange={e => setF({ ...f, titre: e.target.value })} /></div>
       <div className="field"><label>Description</label><textarea className="inp" value={f.description} onChange={e => setF({ ...f, description: e.target.value })} /></div>
@@ -280,7 +322,7 @@ export function Population() {
   const [d, reload] = useData(`/admin/users?q=${encodeURIComponent(q)}`, [q]);
   const act = useAct(reload), { can } = useAdm();
   return <Page title="Utilisateurs (population)" sub="Grand public inscrit sur l’application" actions={<input className="inp" style={{ width: 280 }} placeholder="Nom ou téléphone" value={q} onChange={e => setQ(e.target.value)} />}>
-    <Panel><Table rows={d && d.items} cols={[["Utilisateur", r => <b>{r.prenom} {r.nom}</b>], ["Téléphone", r => fmtTel(r.tel)], ["E-mail", r => r.email || "—"], ["Commune", r => r.commune || "—"], ["Documents", r => r.docs], ["Protections actives", r => r.prots], ["Inscrit le", r => fmtD(r.created_at)],
+    <Panel><Table rows={d && d.items} cols={[["Utilisateur", r => <b>{r.prenom} {r.nom}</b>], ["Téléphone", r => fmtTel(r.tel)], ["E-mail", r => r.email || "—"], ["Commune", r => r.commune || "—"], ["Documents", r => r.docs], ["Protections actives", r => r.prots], ["Portefeuille", r => <P c={PF[r.portefeuille][1]}>{PF[r.portefeuille][0]}</P>], ["Inscrit le", r => fmtD(r.created_at)],
       ["Statut", r => <P c={r.status === "ACTIF" ? "green" : "red"}>{r.status}</P>], ["", r => can("staff.manage") ? <div className="acts"><button className="btn sm ghost" onClick={() => act(() => api.patch(`/admin/users/${r.id}`, { status: r.status === "ACTIF" ? "SUSPENDU" : "ACTIF" }), "Statut mis à jour.")}>{r.status === "ACTIF" ? "Suspendre" : "Réactiver"}</button></div> : null]]} /></Panel>
   </Page>;
 }

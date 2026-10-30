@@ -23,6 +23,17 @@ export const OFFI_ST = { "NON TRANSMISE": "grey", "TRANSMISE": "blue", "EN VÉRI
 export const OFFI_CHAIN = ["NON TRANSMISE", "TRANSMISE", "EN VÉRIFICATION", "VALIDÉE"];
 /* cahier des charges : livreur → Réception en agence (double confirmation) → Vérification & Contrôle → conservé et recherchable */
 export const COL_STEPS = ["Signalement", "Collecte demandée", "Partenaire sélectionné", "Mission transmise au livreur", "Livreur en route", "Document remis au livreur", "Reçu en agence par Réception & Restitution", "Contrôlé par Vérification & Contrôle", "Conservé et recherchable"];
+
+/* statut opérationnel d'une collecte (Collecte §23) à partir de l'étape et des horodatages */
+export function colStatus(f) {
+  if (f.cancelled_at) return ["Annulée", "grey"];
+  if (f.incident) return ["Incident", "red"];
+  if (f.step >= 6) return ["Reçu en agence", "green"];
+  if (f.step === 5) return f.transit_at ? ["En transit", "blue"] : ["Document collecté", "green"];
+  if (f.step === 4) return f.onsite_at ? ["Sur place", "orange"] : ["Livreur en route", "orange"];
+  if (f.step >= 2) return ["Livreur affecté", "blue"];
+  return f.slot ? ["Planifiée", "blue"] : ["À planifier", "grey"];
+}
 export const STEP_RECEIVED = 8;
 /* organigramme (①–⑥) concilié avec le cahier des charges : le document physique est reçu par la Réception,
    la Vérification contrôle puis transmet le dossier validé à la Réception, qui restitue */

@@ -14,7 +14,7 @@ import { Profile } from "./pages/profile.jsx";
 import { StockOps } from "./pages/stock.jsx";
 import { Opportunities, Campaigns } from "./pages/marketing.jsx";
 import { Cash } from "./pages/cash.jsx";
-import { Backups, SystemBadge } from "./pages/supervision.jsx";
+import { Backups, SystemBadge, Assistance, Satisfaction } from "./pages/supervision.jsx";
 import { SLOGAN, ECOSYSTEM } from "@shared/constants.js";
 
 const TOKEN = "ids_admin_token";
@@ -33,6 +33,7 @@ const MENU = [
   ["Direction des opérations", "#F28C12", "users", [
     ["declarations", "Déclarations de perte", "alert", "declarations.view", Declarations],
     ["performance", "Suivi des performances", "chartUp", "performance.view", Performance],
+    ["feedback", "Avis & satisfaction", "star", "performance.view|incidents.manage|staff.manage", Satisfaction],
     ["population", "Utilisateurs (population)", "users", "users.view", Population],
     ["incidents", "Incidents & amélioration continue", "list", "incidents.manage", Incidents]]],
   ["Service commercial", "#7C3AED", "chartUp", [
@@ -44,7 +45,8 @@ const MENU = [
     ["messages", "Assistance utilisateurs", "msg", "support.messages", Messages],
     ["sos", "Alertes SOS", "siren", "sos.monitor", SosMonitor],
     ["system", "Maintenance du système", "server", "system.view", SystemPage],
-    ["backups", "Sauvegardes", "server", "backups.manage", Backups]]],
+    ["backups", "Sauvegardes", "server", "backups.manage", Backups],
+    ["assistance", "Demander de l’aide (support aux agences)", "headset", "support.request", Assistance]]],
   ["Service Collecte & Livraison", "#0B7A32", "truck", [
     ["founds", "Collectes ① ②", "truck", "founds.view|collectes.manage", Founds],
     ["deliveries", "Livraisons au propriétaire", "truck", "collectes.manage", Deliveries],
@@ -56,7 +58,7 @@ const MENU = [
     ["publications", "Publications VIP", "mega", "publications.manage", Publications]]],
   ["Service Réception & Restitution", "#E3141B", "fileDoc", [
     ["reception", "Réception & stock ③", "warehouse", "reception.manage|stock.view", Reception],
-    ["stock-ops", "Transferts, inventaire & non réclamés", "list", "reception.manage|stock.view|stock.transfer.authorize", StockOps],
+    ["stock-ops", "Emplacements, transferts & inventaire", "list", "reception.manage|stock.view|stock.transfer.authorize", StockOps],
     ["restitutions", "Restitutions ⑤ ⑥", "hand", "restitution.manage", Restitutions],
     ["caisse", "Caisse · espèces", "money", "cash.collect", Cash]]]
 ];
@@ -124,7 +126,10 @@ function StaffBell() {
 
 export default function AdminApp() {
   const [staff, setStaff] = useState(null), [ready, setReady] = useState(false), [toastS, setToast] = useState(null), [open, setOpen] = useState(false);
-  const toast = useCallback((msg, ic = "check") => { setToast({ msg, ic }); clearTimeout(window.__admT); window.__admT = setTimeout(() => setToast(null), 3200); }, []);
+  const toast = useCallback((msg, ic = "check") => {
+    const kind = ic === "alert" ? "err" : ic === "check" ? "ok" : "info";
+    setToast({ msg, ic, kind }); clearTimeout(window.__admT); window.__admT = setTimeout(() => setToast(null), kind === "err" ? 5000 : 3200);
+  }, []);
   const logout = useCallback(() => { storage.del(TOKEN); adminApi.setToken(null); setStaff(null); }, []);
   const loadMe = useCallback(async () => { try { const r = await adminApi.get("/admin/me"); setStaff(r.staff); } catch { logout(); } finally { setReady(true); } }, [logout]);
   useEffect(() => { const t = storage.get(TOKEN); adminApi.onUnauthorized(logout); if (t) { adminApi.setToken(t); loadMe(); } else setReady(true); }, [loadMe, logout]);
@@ -161,7 +166,7 @@ export default function AdminApp() {
           </Routes>
         </main>
       </div>
-      {toastS && <div className="adm-toast" role="status"><Icon n={toastS.ic} s={17} /><span>{toastS.msg}</span></div>}
+      {toastS && <div className={`adm-toast t-${toastS.kind}`} role={toastS.kind === "err" ? "alert" : "status"}><Icon n={toastS.ic} s={17} /><span>{toastS.msg}</span><button className="adm-toast-x" onClick={() => setToast(null)} aria-label="Fermer">×</button></div>}
     </div>
   </AdmCtx.Provider>;
 }

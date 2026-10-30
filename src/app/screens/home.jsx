@@ -7,6 +7,7 @@ import Icon from "../../ui/Icon.jsx";
 import { Hdr, Btn, Field, Select, LocBlock, Empty, useLoad, Spinner } from "../../ui/common.jsx";
 import { SLIDES, COMMUNES, DOC_ST, shortSt, isLost } from "@shared/constants.js";
 import { fmtD, fmtDT } from "@shared/format.js";
+import { PendingFeedback } from "./feedback.jsx";
 
 export function Avatar({ sz = 62 }) {
   const { user } = useApp();
@@ -63,6 +64,7 @@ export function Home() {
         {mp ? <><span className={`pill p-${mp.status.c}`} style={{ margin: "3px 0" }}>{mp.status.l}</span><div className="t-s">Expire le {fmtD(mp.exp)} · {prots.summary.protectedDocs} doc. protégés</div></> : <div className="t-s">Protégez un document dès 300 FCFA/an</div>}
       </div><Icon n="chevR" s={15} /></button>
       {prots && prots.summary.vip && lostDoc && <button className="subcard" style={{ background: "var(--ink)", color: "#fff" }} onClick={() => go("vipPub", { id: lostDoc.id })}><span style={{ color: "#F5C842" }}><Icon n="mega" s={24} /></span><div className="grow"><div className="t-h" style={{ fontSize: 13.5 }}>ALERTE DE PERTE VIP</div><div className="t-s" style={{ color: "#C9D2CD" }}>Publiez votre perte auprès de la communauté</div></div><Icon n="chevR" s={15} /></button>}
+      <PendingFeedback />
       <div className="carousel">
         {SLIDES.map((s, i) => <button key={i} className={`slide ${i === slide ? "on" : ""}`} style={{ background: `linear-gradient(110deg,${s.bg[0]},${s.bg[1]}${s.bg[2] ? " 60%," + s.bg[2] : ""})`, textAlign: "left" }} onClick={() => go(s.go)} tabIndex={i === slide ? 0 : -1}>
           <h4>{s.h}</h4><p>{s.p}</p>

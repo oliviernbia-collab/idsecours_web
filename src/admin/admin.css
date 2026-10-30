@@ -33,7 +33,9 @@ body:has(.adm),body:has(.adm-login),body:has(.alertpage){padding:0!important}
 .kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
 .kpi{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:14px 16px;display:flex;gap:12px;align-items:center}
 .kpi .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;flex:none}
-.kpi b{display:block;font:800 22px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
+.kpi>div{min-width:0}
+.kpi b{display:block;font:800 22px/1.1 var(--f-display);font-variant-numeric:tabular-nums;overflow-wrap:break-word}
+.kpi b.long{font-size:15.5px;line-height:1.25}
 .kpi span{font-size:12px;color:var(--muted)}
 .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px}
 .panel{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:16px;min-width:0}
@@ -64,7 +66,11 @@ body:has(.adm),body:has(.adm-login),body:has(.alertpage){padding:0!important}
 .modal-bg{position:fixed;inset:0;background:rgba(10,16,13,.45);z-index:100;display:grid;place-items:center;padding:16px}
 .modal{background:var(--card);border-radius:18px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
 .modal h3{margin:0;font:700 17px var(--f-display)}
-.adm-toast{position:fixed;right:20px;bottom:20px;z-index:120;background:var(--ink);color:#fff;border-radius:14px;padding:12px 16px;display:flex;gap:10px;align-items:center;max-width:420px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.adm-toast{position:fixed;right:20px;bottom:20px;z-index:120;background:var(--ink);color:#fff;border-radius:14px;padding:12px 16px;display:flex;gap:10px;align-items:center;max-width:420px;box-shadow:0 10px 30px rgba(0,0,0,.2);animation:admToast .25s ease-out}
+.adm-toast.t-ok{background:var(--green-d)}
+.adm-toast.t-err{background:var(--red)}
+.adm-toast-x{background:none;border:0;color:#fff;opacity:.8;font-size:18px;line-height:1;cursor:pointer;padding:0 0 0 6px;margin-left:auto}
+@keyframes admToast{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
 .perm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px 18px}
 .thumb{width:72px;height:72px;border-radius:10px;object-fit:cover;background:var(--soft);border:1px solid var(--line)}
 .adm-login{min-height:100vh;display:grid;place-items:center;background:var(--stage);padding:16px;position:relative}

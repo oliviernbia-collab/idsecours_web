@@ -2,11 +2,11 @@
 import { useState } from "react";
 import { adminApi as api, form } from "../../lib/api.js";
 import Icon from "../../ui/Icon.jsx";
-import { Page, Panel, Table, Modal, P, useData, useAct, useAdm, csv, SignaturePad, ProofView } from "../kit.jsx";
-import { COL_STEPS, DOC_ST, OFFI_ST } from "@shared/constants.js";
+import { Page, Panel, Table, Modal, Kpi, P, useData, useAct, useAdm, csv, SignaturePad, ProofView } from "../kit.jsx";
+import { COL_STEPS, DOC_ST, OFFI_ST, colStatus } from "@shared/constants.js";
 import { fmtD, fmtDT, fmtTel, fcfa } from "@shared/format.js";
+import { LocSelect, StoreModal, StoragePlan } from "./stock.jsx";
 
-const STEP_C = ["grey", "orange", "blue", "blue", "orange", "orange", "blue", "blue", "green"];
 
 export function Declarations() {
   const [open, setOpen] = useState(true);
@@ -34,14 +34,20 @@ export function Founds() {
       ["Signalement", r => <><span className="mono">{r.ref}</span><div className="t-s">{fmtDT(r.created_at)}</div></>], ["Document", r => <>{r.cat}<div className="t-s mono">{r.numero || r.nom_visible || "—"}</div></>],
       ["Enregistré", r => r.registered ? <P c="green">Abonné</P> : <P>Non enregistré</P>], ["Point de collecte", r => <>{r.commune || "—"}<div className="t-s">{r.repere || r.slot || ""}</div></>],
       ["Mission", r => r.mission_ref ? <><span className="mono">{r.mission_ref}</span><div className="t-s">{r.partner} · {r.collecteur}</div></> : "—"],
-      ["Étape", r => <P c={STEP_C[r.step]}>{COL_STEPS[r.step]}</P>],
-      ["", r => can("collectes.manage") ? <div className="acts">{r.step < 5 && <button className="btn sm ghost" onClick={() => { setPartner(""); setModal({ t: "assign", r }); }}>Affecter</button>}
-        {r.step >= 3 && r.step < 5 && <button className="btn sm ghost" title="Si le livreur ne peut pas utiliser son portail" onClick={() => { setCode(""); setModal({ t: "hand", r }); }}><Icon n="qr" s={13} /> Remise (secours)</button>}</div> : null]]} /></Panel>
+      ["Statut", r => { const [l, c] = colStatus(r); return <><P c={c}>{l}</P><div className="t-s">{r.cancelled_at ? r.cancel_motif : r.incident ? "Incident ouvert sur ce dossier" : COL_STEPS[r.step]}</div></>; }],
+      ["Agence", r => r.agence || "—"],
+      ["", r => can("collectes.manage") && !r.cancelled_at ? <div className="acts">{r.step < 5 && <button className="btn sm ghost" onClick={() => { setPartner(""); setModal({ t: "assign", r }); }}>Affecter</button>}
+        {r.step >= 3 && r.step < 5 && <button className="btn sm ghost" title="Si le livreur ne peut pas utiliser son portail" onClick={() => { setCode(""); setModal({ t: "hand", r }); }}><Icon n="qr" s={13} /> Remise (secours)</button>}
+        {r.step < 5 && <button className="btn sm ghost" onClick={() => { setCode(""); setModal({ t: "cancel", r }); }}>Annuler</button>}</div> : null]]} /></Panel>
     <div className="note n-blue"><Icon n="moto" s={16} /><span>Les livreurs suivent leurs missions, se déclarent en route et valident le code de remise depuis leur portail : <b>/livreur</b> (code collecteur + PIN).</span></div>
     {modal && modal.t === "assign" && <Modal title={`Affecter la mission · ${modal.r.ref}`} onClose={() => setModal(null)}>
       <div className="field"><label>Partenaire</label><select className="inp" value={partner} onChange={e => setPartner(e.target.value)}><option value="">Choisir…</option>{parts && parts.items.filter(p => p.status === "ACTIF").map(p => <option key={p.id} value={p.id}>{p.nom} · {p.collecteur} ({p.zones})</option>)}</select></div>
       <div className="note n-blue"><Icon n="lock" s={16} /><span>Le partenaire ne reçoit que les données nécessaires à la mission (R49).</span></div>
       <button className="btn red" disabled={!partner} onClick={async () => { if (await act(() => api.post(`/admin/founds/${modal.r.ref}/assign`, { partner }), "Mission affectée.")) setModal(null); }}>Affecter</button></Modal>}
+    {modal && modal.t === "cancel" && <Modal title={`Annuler la collecte · ${modal.r.ref}`} onClose={() => setModal(null)}>
+      <div className="field"><label>Motif (obligatoire)</label><input className="inp" value={code} onChange={e => setCode(e.target.value)} placeholder="Ex. : document récupéré directement par son propriétaire" autoFocus /></div>
+      <div className="note n-orange"><Icon n="info" s={16} /><span>La personne qui a signalé le document est prévenue ; la mission disparaît du portail du livreur. L’annulation est journalisée.</span></div>
+      <button className="btn red" disabled={!code.trim()} onClick={async () => { if (await act(() => api.post(`/admin/founds/${modal.r.ref}/cancel`, { motif: code }), "Collecte annulée · journalisé.")) setModal(null); }}>Annuler la collecte</button></Modal>}
     {modal && modal.t === "hand" && <Modal title={`Remise au collecteur · ${modal.r.mission_ref}`} onClose={() => setModal(null)}>
       <p className="t-s" style={{ margin: 0 }}>Saisissez le code sécurisé affiché sur le téléphone de la personne qui a trouvé le document (ou scanné depuis son QR code). Le code est invalidé après usage.</p>
       <input className="inp mono" inputMode="numeric" maxLength={6} placeholder="Code à 6 chiffres" value={code} onChange={e => setCode(e.target.value)} autoFocus />
@@ -49,6 +55,8 @@ export function Founds() {
   </Page>;
 }
 
+/* suivi des livreurs (Collecte §27) */
+const TERRAIN = { DISPONIBLE: ["Disponibles", "green", "check", "Disponible"], EN_MISSION: ["En mission", "blue", "list"], EN_ROUTE: ["En route", "orange", "moto"], SUR_PLACE: ["Sur place", "orange", "pin"], EN_TRANSIT: ["En transit", "blue", "truck"], INDISPONIBLE: ["Indisponibles", "grey", "lock", "Indisponible"] };
 const PST = { ACTIF: ["Actif", "green"], TEMPORAIREMENT_INDISPONIBLE: ["Temporairement indisponible", "orange"], SUSPENDU: ["Suspendu", "red"], CONTRAT_EXPIRE: ["Contrat expiré", "red"], EN_INTEGRATION: ["En cours d’intégration", "blue"], RESILIE: ["Résilié / archivé", "grey"] };
 const PFIELDS = [["nom", "Raison sociale"], ["nom_commercial", "Nom commercial"], ["contact", "Contact opérationnel"], ["tel", "Téléphone"], ["email", "E-mail"], ["horaires", "Horaires"],
   ["zones", "Zones couvertes (communes, séparées par des virgules)"], ["prestations", "Prestations (Collecte, Livraison)"], ["integration", "Mode de transmission des missions", "select"],
@@ -63,7 +71,9 @@ export function Partners() {
   const [f, setF] = useState(null), [st, setSt] = useState(null);
   const act = useAct(reload), { can } = useAdm();
   return <Page title="Partenaires de livraison" sub="Entreprises de livraison externes agréées (moto, voiture)" actions={can("partners.manage") && <button className="btn sm red" onClick={() => setF({ nom: "", contact: "", tel: "", collecteur: "", vehicule: "", zones: "" })}><Icon n="plus" s={14} /> Nouveau partenaire</button>}>
+    {d && <Panel title="Suivi des livreurs" ic="moto"><div className="kpis">{Object.entries(TERRAIN).map(([k, [l, c, ic]]) => <Kpi key={k} ic={ic} label={l} value={d.items.filter(p => p.terrain === k).length} color={`var(--${c === "grey" ? "muted" : c === "green" ? "green-d" : c})`} bg={`var(--${c === "grey" ? "soft" : c + "-s"})`} />)}</div></Panel>}
     <Panel><Table rows={d && d.items} cols={[["Partenaire", r => <><b>{r.nom}</b><div className="t-s">{r.prestations} · {{ MANUEL: "gestion manuelle", PORTAIL: "portail partenaire", API: "intégration API" }[r.integration]}</div></>], ["Contact", r => <>{r.contact}<div className="t-s">{r.tel}</div></>], ["Collecteur", r => <>{r.collecteur}<div className="t-s mono">{r.collecteur_code} · {r.vehicule}</div></>], ["Zones", r => <span className="t-s">{r.zones}</span>],
+      ["Terrain", r => <><P c={TERRAIN[r.terrain][1]}>{TERRAIN[r.terrain][3] || TERRAIN[r.terrain][0]}</P>{r.mission_actuelle && <div className="t-s mono">{r.mission_actuelle}</div>}<div className="t-s">{r.missions_jour} mission(s) aujourd’hui</div></>],
       ["Missions", r => <>{r.done} / {r.missions}{r.livraisons ? <div className="t-s">{r.livraisons} livraison(s) · {r.echecs} échec(s)</div> : null}</>],
       ["SLA réel / convenu", r => <div className="t-s" style={{ lineHeight: 1.5 }}>
         Prise en charge : <Sla v={r.prise_min} max={r.sla_prise_min} u="min" /><br />Collecte : <Sla v={r.collecte_h} max={r.sla_collecte_h} u="h" />{r.collecte_hors_delai ? <> · <b style={{ color: "var(--red)" }}>{r.collecte_hors_delai} hors délai</b></> : null}<br />
@@ -95,24 +105,26 @@ export function Reception() {
   const { can } = useAdm();
   const [pend, reloadP] = useData("/admin/reception/pending", [], 10000);
   const [stock, reloadS] = useData("/admin/stock");
-  const [modal, setModal] = useState(null), [res, setRes] = useState(null);
-  const reload = () => { reloadP(); reloadS(); };
+  const [locs, reloadL] = useData("/admin/locations");
+  const [modal, setModal] = useState(null), [res, setRes] = useState(null), [store, setStore] = useState(null);
+  const reload = () => { reloadP(); reloadS(); reloadL(); };
   const act = useAct(reload);
   const receive = async () => {
-    const { files = {}, degats = [], ...data } = modal;
+    const { files = {}, degats = [], loc, ...data } = modal;
     const observation = [...degats, data.observation].filter(Boolean).join(" · ");
-    try { const r = await api.post("/admin/reception", form({ ...data, observation, recto: files.recto, verso: files.verso, anomaliePhoto: files.anomalie })); setRes(r); setModal(null); reload(); } catch (e) { act(() => Promise.reject(e)); }
+    try { const r = await api.post("/admin/reception", form({ ...data, ...(loc || {}), observation, recto: files.recto, verso: files.verso, anomaliePhoto: files.anomalie })); setRes(r); setModal(null); reload(); } catch (e) { act(() => Promise.reject(e)); }
   };
   return <Page title="Réception & stock sécurisé" sub="Chaîne de responsabilité : qui a reçu, quand, dans quel état, où il est conservé, qui l’a sorti"
     actions={can("reception.manage") && <button className="btn sm red" onClick={() => setModal({ cat: "CNI", numero: "", nom: "", etatPhysique: "Bon état", emplacement: "" })}><Icon n="plus" s={14} /> Réception manuelle</button>}>
+    {locs && locs.plan.length > 0 && <Panel title={`Plan de stockage${locs.agencies.length ? " · " + (locs.agencies.find(a => a.id === locs.agency) || {}).nom : ""}`} ic="warehouse" right={<a href="stock-ops" className="t-s">Gérer les emplacements →</a>}><StoragePlan plan={locs.plan} compact /></Panel>}
     {can("reception.manage") && <Panel title="③ Documents attendus · remis aux livreurs" ic="truck"><Table rows={pend && pend.items} empty="Aucun document en transit vers l’agence." cols={[
       ["Signalement", r => <span className="mono">{r.ref}</span>], ["Document", r => <>{r.cat}<div className="t-s mono">{r.numero || r.nom_visible}</div></>], ["Mission", r => <>{r.mission_ref}<div className="t-s">{r.partner} · {r.collecteur}</div></>], ["Collecté le", r => fmtDT(r.handed_at)],
       ["", r => <div className="acts"><button className="btn sm green" onClick={() => setModal({ found: r.ref, mission: r.mission_ref, numero: r.numero || "", nom: r.nom_visible || "", etatPhysique: "Bon état", emplacement: "", anomalie: "Document conforme", motif: "" })}>Confirmer la réception physique</button></div>]]} /></Panel>}
     <Panel title="Stock" ic="warehouse"><Table rows={stock && stock.items} cols={[
       ["Réception", r => <><span className="mono">{r.reception_ref}</span><div className="t-s">{fmtDT(r.received_at)}</div></>], ["Document", r => <>{r.cat}<div className="t-s mono">{r.numero || "—"}</div></>], ["Titulaire", r => r.nom || "—"],
-      ["État", r => r.etat_physique], ["Agence", r => r.agence], ["Emplacement", r => r.emplacement ? <span className="mono">{r.emplacement}</span> : <P c="orange">Sans emplacement</P>],
+      ["État", r => r.etat_physique], ["Agence", r => r.agence], ["Emplacement", r => ["RESTITUE", "TRANSFERE"].includes(r.status) ? <span className="t-s">—</span> : r.emplacement ? <><span className="mono">{r.emplacement}</span>{r.location_id && <div>{r.stored_at ? <P c="green">En stock sécurisé</P> : <P c="orange">Rangement à confirmer</P>}</div>}</> : <P c="orange">Sans emplacement</P>],
       ["Statut", r => <P c={{ A_CONTROLER: "orange", RECU: "orange", CONSERVE: "green", QUARANTAINE: "red", EN_RESTITUTION: "blue", RESTITUE: "grey", EN_TRANSIT: "blue" }[r.status]}>{r.status === "A_CONTROLER" ? "À CONTRÔLER" : r.status.replace("_", " ")}</P>],
-      ["", r => can("reception.manage") && ["A_CONTROLER", "RECU", "CONSERVE", "QUARANTAINE"].includes(r.status) ? <div className="acts"><button className="btn sm ghost" onClick={() => setModal({ move: r, emplacement: r.emplacement || "", motif: "" })}>Déplacer</button>
+      ["", r => can("reception.manage") && ["A_CONTROLER", "RECU", "CONSERVE", "QUARANTAINE"].includes(r.status) ? <div className="acts">{r.location_id && !r.stored_at && <button className="btn sm green" onClick={() => setStore(r)}><Icon n="qr" s={13} /> Confirmer le rangement</button>}<button className="btn sm ghost" onClick={() => setModal({ move: r, loc: null, motif: "" })}>Déplacer</button>
         {["RECU", "CONSERVE"].includes(r.status) && <button className="btn sm ghost" onClick={async () => { const c = await api.get("/catalog"); setModal({ transfer: r, agencies: c.agencies, to: "", motif: "" }); }}>Transférer</button>}</div> : null]]} /></Panel>
     {modal && modal.transfer && <Modal title={`Demande de transfert · ${modal.transfer.reception_ref}`} onClose={() => setModal(null)}>
       <div className="note n-blue"><Icon n="truck" s={16} /><span>Circuit : demande → autorisation (Direction / Opérations) → sortie scannée → transport sécurisé → réception scannée à l’agence de destination par un autre agent → nouvel emplacement.</span></div>
@@ -134,18 +146,20 @@ export function Reception() {
         <div className="field"><label>État physique</label><select className="inp" value={modal.etatPhysique} onChange={e => setModal({ ...modal, etatPhysique: e.target.value })}>{["Bon état", "État moyen", "Endommagé", "Très endommagé", "Illisible / à contrôler"].map(x => <option key={x}>{x}</option>)}</select></div>
         <div className="row" style={{ flexWrap: "wrap", gap: 6 }}>{["Plié", "Rayé", "Déchiré", "Mouillé", "Perforé", "Cassé", "Illisible"].map(x => { const on = (modal.degats || []).includes(x); return <button type="button" key={x} className={`chip ${on ? "on" : ""}`} onClick={() => setModal(md => ({ ...md, degats: on ? md.degats.filter(y => y !== x) : [...(md.degats || []), x] }))}>{x}</button>; })}</div>
         <div className="field"><label>Observation</label><input className="inp" value={modal.observation || ""} onChange={e => setModal({ ...modal, observation: e.target.value })} /></div></>}
-      <div className="field"><label>Emplacement (ex. A-01-03)</label><input className="inp mono" value={modal.emplacement} onChange={e => setModal({ ...modal, emplacement: e.target.value })} /></div>
+      <div className="field"><label>Emplacement (seuls les emplacements libres sont proposés)</label><LocSelect value={modal.loc} onChange={loc => setModal(md => ({ ...md, loc }))} /></div>
       <button className="btn red" onClick={receive}>Enregistrer la réception</button></Modal>}
     {modal && modal.move && <Modal title={`Déplacement · ${modal.move.reception_ref}`} onClose={() => setModal(null)}>
-      <div className="field"><label>Nouvel emplacement</label><input className="inp mono" value={modal.emplacement} onChange={e => setModal({ ...modal, emplacement: e.target.value })} /></div>
+      <div className="field"><label>Nouvel emplacement{modal.move.emplacement ? ` (actuel : ${modal.move.emplacement})` : ""}</label><LocSelect agency={modal.move.agency_id} exclude={modal.move.location_id} value={modal.loc} onChange={loc => setModal(md => ({ ...md, loc }))} /></div>
       <div className="field"><label>Motif (obligatoire pour la traçabilité)</label><input className="inp" value={modal.motif} onChange={e => setModal({ ...modal, motif: e.target.value })} /></div>
       <div className="row"><button className="btn ghost sm" onClick={async () => { if (await act(() => api.post(`/admin/stock/${modal.move.id}/move`, { status: "QUARANTAINE", motif: modal.motif || "Isolement" }), "Document isolé.")) setModal(null); }}>Mettre en quarantaine</button>
-        <button className="btn red sm grow" disabled={!modal.emplacement || !modal.motif} onClick={async () => { if (await act(() => api.post(`/admin/stock/${modal.move.id}/move`, { emplacement: modal.emplacement, status: "CONSERVE", motif: modal.motif }), "Déplacement tracé.")) setModal(null); }}>Enregistrer</button></div></Modal>}
+        <button className="btn red sm grow" disabled={!modal.loc || !modal.motif} onClick={async () => { if (await act(() => api.post(`/admin/stock/${modal.move.id}/move`, { ...modal.loc, status: "CONSERVE", motif: modal.motif }), "Déplacement tracé · confirmez le rangement (double scan).")) setModal(null); }}>Enregistrer</button></div></Modal>}
+    {store && <StoreModal doc={store} onClose={() => setStore(null)} onDone={reload} />}
     {res && <Modal title={res.ref ? `Réception enregistrée · ${res.ref}` : "Document absent"} onClose={() => setRes(null)}>
       {res.qr && <img src={res.qr} alt="QR interne" style={{ width: 200, alignSelf: "center", imageRendering: "pixelated" }} />}
       {res.ref && <div className="note n-blue"><Icon n="qr" s={16} /><span>QR code interne à imprimer sur l’étiquette de l’enveloppe sécurisée. Statut : <b>À CONTRÔLER</b> — le document n’est ni recherchable ni restituable avant la décision de Vérification & Contrôle.</span></div>}
       {res.incident && <div className="note n-red"><Icon n="alert" s={16} /><span>Incident partenaire {res.incident} créé automatiquement.</span></div>}
-      {res.ref && <button className="btn ghost" onClick={() => window.print()}><Icon n="download" s={14} /> Imprimer l’étiquette</button>}</Modal>}
+      {res.ref && <button className="btn ghost" onClick={() => window.print()}><Icon n="download" s={14} /> Imprimer l’étiquette</button>}
+      {res.located && <button className="btn red" onClick={() => { setStore({ id: res.id, reception_ref: res.ref, emplacement: res.emplacement }); setRes(null); }}><Icon n="qr" s={14} /> Ranger en {res.emplacement} et confirmer (double scan)</button>}</Modal>}
   </Page>;
 }
 

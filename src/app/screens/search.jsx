@@ -7,6 +7,7 @@ import { Hdr, Btn, Field, Input, Select, Note, Hero, Kv, Pill, Spinner, Timeline
 import { locate } from "../../lib/geo.js";
 import { COMMUNES, SLOTS } from "@shared/constants.js";
 import { fcfa, fmtD } from "@shared/format.js";
+import { FeedbackBox } from "./feedback.jsx";
 
 export function Search() {
   const app = useApp();
@@ -193,6 +194,7 @@ export function RecDone({ p }) {
   const c = app.catOf(r.cat);
   return <div className="pad">
     <Hero ic="check" size={40} bg="var(--green)" color="#fff" title="DOCUMENT RÉCUPÉRÉ"><p className="t-s">{c.label} · dossier {r.ref} · {fmtD(r.doneT)}</p></Hero>
+    <FeedbackBox dossier={r.ref} />
     <Btn c="ghost" ic="receipt" onClick={async () => { try { const { proof: x } = await api.get(`/recoveries/${r.ref}/proof`); app.openSheet(<div className="col" style={{ gap: 12 }}><div className="t-label">Preuve de restitution</div><span className="ref" style={{ alignSelf: "flex-start" }}>{x.reference}</span>
       <div className="card" style={{ boxShadow: "none", border: "1.5px dashed var(--line)" }}><Kv rows={[["Dossier", x.dossier], ["Document", `${x.document} · ${x.numero}`], ["Agence", x.agence], ["Date", new Date(x.date).toLocaleString("fr-FR")], ["Mode", x.mode], x.agent && ["Agent", x.agent]]} /></div>
       <Btn c="ghost" onClick={() => window.print()}>Imprimer / PDF</Btn><Btn c="ghost" onClick={app.closeSheet}>Fermer</Btn></div>); } catch (e) { app.toast(e.message, "alert"); } }}>Ma preuve de restitution</Btn>

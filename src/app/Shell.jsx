@@ -126,7 +126,7 @@ export default function Shell() {
             {navOn && <nav className="nav">{NAV_ITEMS.map(([k, ic, l]) => <button key={k} className={cur.name === k ? "on" : ""} onClick={() => app.tab(k)}><Icon n={ic} s={21} />{k === "notifs" && app.unread > 0 && <b className="nbdg">{app.unread > 99 ? "99+" : app.unread}</b>}<span>{l}</span></button>)}</nav>}
             <div className={`scrim ${app.sheet ? "on" : ""}`} onClick={app.closeSheet} />
             <div className={`sheet ${app.sheet ? "on" : ""}`} role="dialog" aria-modal="true"><div className="grab" />{app.sheet}</div>
-            <div className={`toast ${app.toastS ? "on" : ""}`} role="status">{app.toastS && <><Icon n={app.toastS.ic} s={17} /><span>{app.toastS.msg}</span></>}</div>
+            <div className={`toast ${app.toastS ? "on t-" + app.toastS.kind : ""}`} role={app.toastS && app.toastS.kind === "err" ? "alert" : "status"}>{app.toastS && <><Icon n={app.toastS.ic} s={17} /><span>{app.toastS.msg}</span></>}</div>
             <button className={`push ${app.push ? "on" : ""}`} onClick={() => { const l = app.push && app.push.link; app.setPush(null); linkTo(app, l); }}>
               {app.push && <><img src="/logo.png" alt="" style={{ objectFit: "contain" }} /><div className="grow"><b>{app.push.title}</b><span>{app.push.body}</span></div><span className="t-s">maintenant</span></>}
             </button>

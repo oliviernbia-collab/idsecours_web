@@ -5,7 +5,7 @@ import { createApi } from "@shared/api.js";
 import { storage } from "../lib/api.js";
 import Icon from "../ui/Icon.jsx";
 import { Wordmark, PwField } from "../ui/common.jsx";
-import { COL_STEPS, SLOGAN } from "@shared/constants.js";
+import { COL_STEPS, SLOGAN, colStatus } from "@shared/constants.js";
 import { fmtT } from "@shared/format.js";
 import "../admin/admin.css";
 
@@ -52,6 +52,7 @@ export default function CourierApp() {
     <div className="t-s" style={{ textAlign: "center", fontStyle: "italic" }}>{SLOGAN}</div></form></div>;
 
   const enroute = async m => { try { await api.post(`/courier/missions/${m.ref}/enroute`); flash("La personne a été prévenue de votre arrivée."); load(); } catch (e) { flash(e.message, false); } };
+  const step = async (m, path, ok) => { try { await api.post(`/courier/missions/${m.ref}/${path}`); flash(ok); load(); } catch (e) { flash(e.message, false); } };
   const handover = async (m, c) => { try { await api.post(`/courier/missions/${m.ref}/handover`, { code: c }); flash("Code validé · document collecté. Déposez-le à l’agence ID SECOURS."); setCode({}); load(); } catch (e) { flash(e.message, false); } };
   const active = (list || []).filter(m => m.step <= 5), done = (list || []).filter(m => m.step > 5);
 
@@ -66,15 +67,17 @@ export default function CourierApp() {
       <div className="t-label">Missions en cours · {active.length}</div>
       {!list ? <div className="loading"><div className="spinner" /></div> : active.length ? active.map(m => <div key={m.ref} className="card col" style={{ gap: 10 }}>
         <div className="row"><span style={{ width: 40, height: 40, borderRadius: 12, background: "var(--green-s)", color: "var(--green-d)", display: "grid", placeItems: "center" }}><Icon n="truck" s={18} /></span>
-          <div className="grow"><div className="t-h">Mission {m.mission}</div><div className="t-s">{m.cat} · {m.ref}</div></div><span className={`pill p-${m.step === 5 ? "green" : "orange"}`}>{COL_STEPS[m.step]}</span></div>
+          <div className="grow"><div className="t-h">Mission {m.mission}</div><div className="t-s">{m.cat} · {m.ref}</div></div>{(([l, c]) => <span className={`pill p-${c}`}>{l}</span>)(colStatus({ ...m, onsite_at: m.onsiteT, transit_at: m.transitT }))}</div>
         <dl className="kv"><dt>Point de collecte</dt><dd>{m.commune || "—"}{m.repere ? " · " + m.repere : ""}</dd><dt>Créneau</dt><dd>{m.slot || "Dès que possible"}</dd><dt>Contact</dt><dd>{m.tel ? <a href={`tel:${m.tel.replace(/\s/g, "")}`}>{m.tel}</a> : "Via la messagerie ID SECOURS"}</dd></dl>
         <a className="btn ghost sm" style={{ width: "100%" }} target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${m.lat},${m.lng}`}><Icon n="map" s={14} /> Itinéraire</a>
         {m.step === 3 && <button className="btn dark" onClick={() => enroute(m)}><Icon n="moto" s={16} /> Je suis en route</button>}
+        {m.step === 4 && !m.onsiteT && <button className="btn dark" onClick={() => step(m, "onsite", "Arrivée confirmée · la personne a été prévenue.")}><Icon n="pin" s={16} /> Je suis sur place</button>}
         {(m.step === 3 || m.step === 4) && <><div className="row"><input className="inp mono grow" inputMode="numeric" maxLength={6} placeholder="Code de collecte (6 chiffres)" value={code[m.ref] || ""} onChange={e => setCode({ ...code, [m.ref]: e.target.value })} />
           <button className="btn green sm" disabled={(code[m.ref] || "").length !== 6} onClick={() => handover(m, code[m.ref])}>Valider</button></div>
           {"BarcodeDetector" in window && <button className="btn ghost sm" style={{ width: "100%" }} onClick={() => setScan(m)}><Icon n="qr" s={14} /> Scanner le QR code</button>}
           <div className="t-s">Ne récupérez le document qu’après validation du code présenté par la personne. Le code est invalidé après usage.</div></>}
-        {m.step === 5 && <div className="note n-green"><Icon n="check" s={16} /><span>Collecté à {fmtT(m.handT)}. Déposez le document à l’<b>agence ID SECOURS</b> : le service Réception & Restitution confirmera la réception physique (double confirmation ③).</span></div>}
+        {m.step === 5 && !m.transitT && <button className="btn dark" onClick={() => step(m, "transit", "Départ vers l’agence enregistré.")}><Icon n="truck" s={16} /> Je pars vers l’agence</button>}
+        {m.step === 5 && <div className="note n-green"><Icon n="check" s={16} /><span>Collecté à {fmtT(m.handT)}{m.transitT ? ` · en transit depuis ${fmtT(m.transitT)}` : ""}. Déposez le document à l’<b>agence ID SECOURS</b> : le service Réception & Restitution confirmera la réception physique (double confirmation ③).</span></div>}
       </div>) : <div className="card empty"><Icon n="truck" s={30} />Aucune mission en cours.</div>}
       <div className="t-label">Livraisons au propriétaire · {dlv.filter(x => ["PLANIFIEE", "EN_LIVRAISON"].includes(x.st)).length}</div>
       {dlv.length ? dlv.map(x => <div key={x.ref} className="card col" style={{ gap: 10 }}>

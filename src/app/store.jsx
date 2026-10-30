@@ -23,7 +23,10 @@ export function AppProvider({ children }) {
   const lastNotif = useRef(null);
   const toastT = useRef(), pushT = useRef();
 
-  const toast = useCallback((msg, ic = "check") => { setToast({ msg, ic, k: Date.now() }); clearTimeout(toastT.current); toastT.current = setTimeout(() => setToast(null), 2600); }, []);
+  const toast = useCallback((msg, ic = "check") => {
+    const kind = ic === "alert" ? "err" : ic === "check" ? "ok" : "info";
+    setToast({ msg, ic, kind, k: Date.now() }); clearTimeout(toastT.current); toastT.current = setTimeout(() => setToast(null), kind === "err" ? 4500 : 2800);
+  }, []);
   const showPush = useCallback((title, body, link) => { setPush({ title, body, link }); clearTimeout(pushT.current); pushT.current = setTimeout(() => setPush(null), 4500); }, []);
 
   /* ---------- navigation (pile + historique du navigateur) ---------- */
