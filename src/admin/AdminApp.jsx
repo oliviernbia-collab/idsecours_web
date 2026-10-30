@@ -11,6 +11,10 @@ import { Declarations, Founds, FoundChecks, Partners, Reception, Verifications, 
 import { Staff, Roles, Agencies, Settings, Logs } from "./pages/system.jsx";
 import { SystemPage } from "./pages/maintenance.jsx";
 import { Profile } from "./pages/profile.jsx";
+import { StockOps } from "./pages/stock.jsx";
+import { Opportunities, Campaigns } from "./pages/marketing.jsx";
+import { Cash } from "./pages/cash.jsx";
+import { Backups, SystemBadge } from "./pages/supervision.jsx";
 import { SLOGAN, ECOSYSTEM } from "@shared/constants.js";
 
 const TOKEN = "ids_admin_token";
@@ -24,7 +28,8 @@ const MENU = [
     ["settings", "Tarifs & formules", "sliders", "settings.manage", Settings],
     ["logs", "Suivi global & journaux", "clock", "audit.view|staff.manage", Logs]]],
   ["Direction financière & comptabilité", "#13A043", "chartBar", [
-    ["finance", "Paiements, factures & rapports", "invoice", "finance.view", Finance]]],
+    ["finance", "Paiements, factures & rapports", "invoice", "finance.view", Finance],
+    ["cash", "Caisses des agences (espèces)", "money", "finance.view", Cash]]],
   ["Direction des opérations", "#F28C12", "users", [
     ["declarations", "Déclarations de perte", "alert", "declarations.view", Declarations],
     ["performance", "Suivi des performances", "chartUp", "performance.view", Performance],
@@ -32,11 +37,14 @@ const MENU = [
     ["incidents", "Incidents & amélioration continue", "list", "incidents.manage", Incidents]]],
   ["Service commercial", "#7C3AED", "chartUp", [
     ["commercial", "Abonnements & prospects", "crown", "commercial.view", Commercial],
+    ["opportunities", "Opportunités & pipeline", "list", "commercial.view", Opportunities],
+    ["campaigns", "Campagnes & segments", "mega", "commercial.view|campaigns.validate", Campaigns],
     ["com-partners", "Partenariats", "handshake", "commercial.view", ComPartners]]],
   ["Support technique", "#6A7570", "headset", [
     ["messages", "Assistance utilisateurs", "msg", "support.messages", Messages],
     ["sos", "Alertes SOS", "siren", "sos.monitor", SosMonitor],
-    ["system", "Maintenance du système", "server", "system.view", SystemPage]]],
+    ["system", "Maintenance du système", "server", "system.view", SystemPage],
+    ["backups", "Sauvegardes", "server", "backups.manage", Backups]]],
   ["Service Collecte & Livraison", "#0B7A32", "truck", [
     ["founds", "Collectes ① ②", "truck", "founds.view|collectes.manage", Founds],
     ["deliveries", "Livraisons au propriétaire", "truck", "collectes.manage", Deliveries],
@@ -48,7 +56,9 @@ const MENU = [
     ["publications", "Publications VIP", "mega", "publications.manage", Publications]]],
   ["Service Réception & Restitution", "#E3141B", "fileDoc", [
     ["reception", "Réception & stock ③", "warehouse", "reception.manage|stock.view", Reception],
-    ["restitutions", "Restitutions ⑤ ⑥", "hand", "restitution.manage", Restitutions]]]
+    ["stock-ops", "Transferts, inventaire & non réclamés", "list", "reception.manage|stock.view|stock.transfer.authorize", StockOps],
+    ["restitutions", "Restitutions ⑤ ⑥", "hand", "restitution.manage", Restitutions],
+    ["caisse", "Caisse · espèces", "money", "cash.collect", Cash]]]
 ];
 const allowed = (staff, perm) => perm.split("|").some(p => staff.perms.includes(p));
 
@@ -138,7 +148,7 @@ export default function AdminApp() {
         <header className="adm-top">
           <button className="iconbtn menu-btn" onClick={() => setOpen(!open)} aria-label="Menu"><Icon n="bars" s={18} /></button>
           <GlobalSearch />
-          <div className="adm-who"><StaffBell />
+          <div className="adm-who"><SystemBadge /><StaffBell />
             <NavLink to="profil" className="who-link" title="Mon profil"><div className="who-txt"><div style={{ fontWeight: 700 }}>{staff.prenom} {staff.nom}</div><div className="t-s">{staff.roleLabel}{staff.agency ? " · " + staff.agency : ""}</div></div>
               {staff.photo ? <img className="av" src={staff.photo} alt="" style={{ objectFit: "cover" }} /> : <span className="av">{staff.prenom[0]}</span>}</NavLink>
             <button className="iconbtn" onClick={logout} aria-label="Se déconnecter" title="Se déconnecter"><Icon n="logout" s={17} /></button></div>

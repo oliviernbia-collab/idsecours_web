@@ -4,7 +4,7 @@ import { adminApi as api, form } from "../../lib/api.js";
 import Icon from "../../ui/Icon.jsx";
 import { Page, Panel, Table, Modal, P, useData, useAct, useAdm, csv, SignaturePad, ProofView } from "../kit.jsx";
 import { COL_STEPS, DOC_ST, OFFI_ST } from "@shared/constants.js";
-import { fmtD, fmtDT, fmtTel } from "@shared/format.js";
+import { fmtD, fmtDT, fmtTel, fcfa } from "@shared/format.js";
 
 const STEP_C = ["grey", "orange", "blue", "blue", "orange", "orange", "blue", "blue", "green"];
 
@@ -49,17 +49,43 @@ export function Founds() {
   </Page>;
 }
 
+const PST = { ACTIF: ["Actif", "green"], TEMPORAIREMENT_INDISPONIBLE: ["Temporairement indisponible", "orange"], SUSPENDU: ["Suspendu", "red"], CONTRAT_EXPIRE: ["Contrat expiré", "red"], EN_INTEGRATION: ["En cours d’intégration", "blue"], RESILIE: ["Résilié / archivé", "grey"] };
+const PFIELDS = [["nom", "Raison sociale"], ["nom_commercial", "Nom commercial"], ["contact", "Contact opérationnel"], ["tel", "Téléphone"], ["email", "E-mail"], ["horaires", "Horaires"],
+  ["zones", "Zones couvertes (communes, séparées par des virgules)"], ["prestations", "Prestations (Collecte, Livraison)"], ["integration", "Mode de transmission des missions", "select"],
+  ["date_debut", "Début du partenariat", "date"], ["contrat_fin", "Fin du contrat", "date"], ["sla_prise_min", "SLA prise en charge (min)", "number"], ["sla_collecte_h", "SLA collecte (h)", "number"],
+  ["sla_depot_h", "SLA dépôt en agence (h)", "number"], ["sla_livraison_h", "SLA livraison (h)", "number"], ["tarif_collecte", "Tarif collecte (FCFA)", "number"], ["tarif_livraison", "Tarif livraison (FCFA)", "number"],
+  ["conditions", "Conditions (échec, retour, responsabilité, confidentialité)"]];
+/* délai réel comparé au délai contractuel */
+const Sla = ({ v, max, u }) => v == null ? <span>— / {max} {u}</span> : <b style={{ color: +v > max ? "var(--red)" : "var(--green-d)" }}>{v} / {max} {u}</b>;
+
 export function Partners() {
   const [d, reload] = useData("/admin/partners");
-  const [f, setF] = useState(null);
+  const [f, setF] = useState(null), [st, setSt] = useState(null);
   const act = useAct(reload), { can } = useAdm();
   return <Page title="Partenaires de livraison" sub="Entreprises de livraison externes agréées (moto, voiture)" actions={can("partners.manage") && <button className="btn sm red" onClick={() => setF({ nom: "", contact: "", tel: "", collecteur: "", vehicule: "", zones: "" })}><Icon n="plus" s={14} /> Nouveau partenaire</button>}>
-    <Panel><Table rows={d && d.items} cols={[["Partenaire", r => <b>{r.nom}</b>], ["Contact", r => <>{r.contact}<div className="t-s">{r.tel}</div></>], ["Collecteur", r => <>{r.collecteur}<div className="t-s mono">{r.collecteur_code} · {r.vehicule}</div></>], ["Zones", r => <span className="t-s">{r.zones}</span>],
-      ["Missions", r => `${r.done} / ${r.missions}`], ["Statut", r => <P c={r.status === "ACTIF" ? "green" : "red"}>{r.status}</P>],
-      ["", r => can("partners.manage") ? <div className="acts"><button className="btn sm ghost" onClick={() => { const pin = String(Math.floor(1000 + Math.random() * 9000)); act(() => api.patch(`/admin/partners/${r.id}`, { pin }), `Nouveau PIN de ${r.collecteur} : ${pin} (à communiquer au livreur).`); }}>Nouveau PIN</button>
-        <button className="btn sm ghost" onClick={() => act(() => api.patch(`/admin/partners/${r.id}`, { status: r.status === "ACTIF" ? "SUSPENDU" : "ACTIF" }), "Statut mis à jour.")}>{r.status === "ACTIF" ? "Suspendre" : "Réactiver"}</button></div> : null]]} /></Panel>
+    <Panel><Table rows={d && d.items} cols={[["Partenaire", r => <><b>{r.nom}</b><div className="t-s">{r.prestations} · {{ MANUEL: "gestion manuelle", PORTAIL: "portail partenaire", API: "intégration API" }[r.integration]}</div></>], ["Contact", r => <>{r.contact}<div className="t-s">{r.tel}</div></>], ["Collecteur", r => <>{r.collecteur}<div className="t-s mono">{r.collecteur_code} · {r.vehicule}</div></>], ["Zones", r => <span className="t-s">{r.zones}</span>],
+      ["Missions", r => <>{r.done} / {r.missions}{r.livraisons ? <div className="t-s">{r.livraisons} livraison(s) · {r.echecs} échec(s)</div> : null}</>],
+      ["SLA réel / convenu", r => <div className="t-s" style={{ lineHeight: 1.5 }}>
+        Prise en charge : <Sla v={r.prise_min} max={r.sla_prise_min} u="min" /><br />Collecte : <Sla v={r.collecte_h} max={r.sla_collecte_h} u="h" />{r.collecte_hors_delai ? <> · <b style={{ color: "var(--red)" }}>{r.collecte_hors_delai} hors délai</b></> : null}<br />
+        Dépôt agence : <Sla v={r.depot_h} max={r.sla_depot_h} u="h" /><br />Livraison : <Sla v={r.livraison_h} max={r.sla_livraison_h} u="h" />
+        {r.en_retard > 0 && <div><P c="red">{r.en_retard} mission(s) en retard</P></div>}</div>],
+      ["Contrat", r => <div className="t-s">{r.date_debut ? `Depuis le ${fmtD(r.date_debut)}` : "—"}{r.contrat_fin && <div style={{ color: r.contrat_expire ? "var(--red)" : undefined }}>Fin : {fmtD(r.contrat_fin)}{r.contrat_expire ? " (expiré)" : ""}</div>}<div>Collecte {fcfa(r.tarif_collecte)} · livraison {fcfa(r.tarif_livraison)}</div></div>],
+      ["Statut", r => <><P c={PST[r.status][1]}>{PST[r.status][0]}</P>{r.status_motif && <div className="t-s">{r.status_motif}</div>}</>],
+      ["", r => can("partners.manage") ? <div className="acts"><button className="btn sm ghost" onClick={() => setF({ edit: r.id, ...Object.fromEntries(PFIELDS.map(([k]) => [k, r[k] == null ? "" : String(r[k]).slice(0, k.startsWith("date") || k === "contrat_fin" ? 10 : 500)])) })}>Contrat & SLA</button>
+        <button className="btn sm ghost" onClick={() => setSt({ id: r.id, nom: r.nom, status: r.status, motif: "" })}>Statut</button>
+        <button className="btn sm ghost" onClick={() => { const pin = String(Math.floor(1000 + Math.random() * 9000)); act(() => api.patch(`/admin/partners/${r.id}`, { pin }), `Nouveau PIN de ${r.collecteur} : ${pin} (à communiquer au livreur).`); }}>Nouveau PIN</button></div> : null]]} /></Panel>
+    {f && f.edit && <Modal title="Contrat & SLA du partenaire" onClose={() => setF(null)}>
+      <div className="grid-2">{PFIELDS.map(([k, l, t]) => <div key={k} className="field" style={k === "conditions" ? { gridColumn: "1 / -1" } : undefined}><label>{l}</label>
+        {t === "select" ? <select className="inp" value={f[k]} onChange={e => setF({ ...f, [k]: e.target.value })}>{["PORTAIL", "MANUEL", "API"].map(x => <option key={x}>{x}</option>)}</select>
+          : <input className="inp" type={t || "text"} value={f[k]} onChange={e => setF({ ...f, [k]: e.target.value })} />}</div>)}</div>
+      <button className="btn red" onClick={async () => { const { edit, ...b } = f; if (await act(() => api.patch(`/admin/partners/${edit}`, Object.fromEntries(Object.entries(b).map(([k, v]) => [k, /^(sla_|tarif_)/.test(k) ? +v : v]))), "Contrat & SLA enregistrés · modification journalisée.")) setF(null); }}>Enregistrer</button></Modal>}
+    {st && <Modal title={`Statut · ${st.nom}`} onClose={() => setSt(null)}>
+      <div className="field"><label>Statut</label><select className="inp" value={st.status} onChange={e => setSt({ ...st, status: e.target.value })}>{Object.entries(PST).map(([k, [l]]) => <option key={k} value={k}>{l}</option>)}</select></div>
+      <div className="field"><label>Motif {["SUSPENDU", "RESILIE", "TEMPORAIREMENT_INDISPONIBLE"].includes(st.status) ? "(obligatoire)" : "(facultatif)"}</label><input className="inp" value={st.motif} onChange={e => setSt({ ...st, motif: e.target.value })} /></div>
+      <div className="note n-orange"><Icon n="info" s={16} /><span>Seuls les partenaires « Actif » reçoivent de nouvelles missions. Les missions déjà en cours restent à suivre séparément.</span></div>
+      <button className="btn red" onClick={async () => { if (await act(() => api.patch(`/admin/partners/${st.id}`, { status: st.status, motif: st.motif }), "Statut mis à jour · journalisé.")) setSt(null); }}>Enregistrer</button></Modal>}
     <div className="note n-blue"><Icon n="moto" s={16} /><span>Portail des livreurs : <b>{window.location.origin}/livreur</b> · connexion avec le code collecteur et le PIN. Le livreur ne voit que les données nécessaires à sa mission (R49).</span></div>
-    {f && <Modal title="Nouveau partenaire" onClose={() => setF(null)}>
+    {f && !f.edit && <Modal title="Nouveau partenaire" onClose={() => setF(null)}>
       {[["nom", "Raison sociale"], ["contact", "Contact"], ["tel", "Téléphone"], ["collecteur", "Collecteur principal"], ["vehicule", "Véhicule"], ["zones", "Zones (communes séparées par des virgules)"]].map(([k, l]) => <div key={k} className="field"><label>{l}</label><input className="inp" value={f[k]} onChange={e => setF({ ...f, [k]: e.target.value })} /></div>)}
       <button className="btn red" onClick={async () => { if (await act(() => api.post("/admin/partners", f), "Partenaire créé.")) setF(null); }}>Enregistrer</button></Modal>}
   </Page>;
@@ -85,9 +111,15 @@ export function Reception() {
     <Panel title="Stock" ic="warehouse"><Table rows={stock && stock.items} cols={[
       ["Réception", r => <><span className="mono">{r.reception_ref}</span><div className="t-s">{fmtDT(r.received_at)}</div></>], ["Document", r => <>{r.cat}<div className="t-s mono">{r.numero || "—"}</div></>], ["Titulaire", r => r.nom || "—"],
       ["État", r => r.etat_physique], ["Agence", r => r.agence], ["Emplacement", r => r.emplacement ? <span className="mono">{r.emplacement}</span> : <P c="orange">Sans emplacement</P>],
-      ["Statut", r => <P c={{ A_CONTROLER: "orange", RECU: "orange", CONSERVE: "green", QUARANTAINE: "red", EN_RESTITUTION: "blue", RESTITUE: "grey" }[r.status]}>{r.status === "A_CONTROLER" ? "À CONTRÔLER" : r.status.replace("_", " ")}</P>],
-      ["", r => can("reception.manage") && ["A_CONTROLER", "RECU", "CONSERVE", "QUARANTAINE"].includes(r.status) ? <div className="acts"><button className="btn sm ghost" onClick={() => setModal({ move: r, emplacement: r.emplacement || "", motif: "" })}>Déplacer</button></div> : null]]} /></Panel>
-    {modal && !modal.move && <Modal title={modal.found ? `Réception physique · mission ${modal.mission}` : "Dépôt direct en agence"} onClose={() => setModal(null)}>
+      ["Statut", r => <P c={{ A_CONTROLER: "orange", RECU: "orange", CONSERVE: "green", QUARANTAINE: "red", EN_RESTITUTION: "blue", RESTITUE: "grey", EN_TRANSIT: "blue" }[r.status]}>{r.status === "A_CONTROLER" ? "À CONTRÔLER" : r.status.replace("_", " ")}</P>],
+      ["", r => can("reception.manage") && ["A_CONTROLER", "RECU", "CONSERVE", "QUARANTAINE"].includes(r.status) ? <div className="acts"><button className="btn sm ghost" onClick={() => setModal({ move: r, emplacement: r.emplacement || "", motif: "" })}>Déplacer</button>
+        {["RECU", "CONSERVE"].includes(r.status) && <button className="btn sm ghost" onClick={async () => { const c = await api.get("/catalog"); setModal({ transfer: r, agencies: c.agencies, to: "", motif: "" }); }}>Transférer</button>}</div> : null]]} /></Panel>
+    {modal && modal.transfer && <Modal title={`Demande de transfert · ${modal.transfer.reception_ref}`} onClose={() => setModal(null)}>
+      <div className="note n-blue"><Icon n="truck" s={16} /><span>Circuit : demande → autorisation (Direction / Opérations) → sortie scannée → transport sécurisé → réception scannée à l’agence de destination par un autre agent → nouvel emplacement.</span></div>
+      <div className="field"><label>Agence de destination</label><select className="inp" value={modal.to} onChange={e => setModal({ ...modal, to: e.target.value })}><option value="">Choisir…</option>{modal.agencies.filter(a => a.nom !== modal.transfer.agence).map(a => <option key={a.id} value={a.id}>{a.nom} · {a.commune}</option>)}</select></div>
+      <div className="field"><label>Motif (obligatoire)</label><input className="inp" value={modal.motif} onChange={e => setModal({ ...modal, motif: e.target.value })} placeholder="Ex. : propriétaire domicilié à Yopougon" /></div>
+      <button className="btn red" disabled={!modal.to || !modal.motif} onClick={async () => { if (await act(() => api.post(`/admin/stock/${modal.transfer.id}/transfer`, { to: +modal.to, motif: modal.motif }), "Demande de transfert enregistrée · en attente d’autorisation.")) setModal(null); }}>Demander le transfert</button></Modal>}
+    {modal && !modal.move && !modal.transfer && <Modal title={modal.found ? `Réception physique · mission ${modal.mission}` : "Dépôt direct en agence"} onClose={() => setModal(null)}>
       {modal.found && <><div className="note n-blue"><Icon n="moto" s={16} /><span>Double confirmation : le livreur remet le document, vous confirmez sa réception physique. Le document sera ensuite contrôlé par Vérification & Contrôle (④).</span></div>
         <div className="field"><label>Constat à la réception</label><select className="inp" value={modal.anomalie} onChange={e => setModal({ ...modal, anomalie: e.target.value })}>{["Document conforme", "Document endommagé", "Document différent", "Document absent", "Enveloppe/conditionnement endommagé", "Référence incorrecte", "Autre anomalie"].map(x => <option key={x}>{x}</option>)}</select></div>
         {modal.anomalie !== "Document conforme" && <><div className="field"><label>Précisions (incident partenaire créé automatiquement)</label><input className="inp" value={modal.motif} onChange={e => setModal({ ...modal, motif: e.target.value })} /></div></>}</>}

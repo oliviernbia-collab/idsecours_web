@@ -106,36 +106,40 @@ export function AddDocForm({ p }) {
   const set = k => v => { d[k] = v; force(x => x + 1); };
   const f = (id, l, t = "text", ph = "", req) => <Field label={l} req={req} id={"ad-" + id}><Input id={"ad-" + id} type={t} placeholder={ph} value={d[id]} onChange={set(id)} className={id === "num" ? "mono" : ""} /></Field>;
   const next = () => {
-    if (!(d.num || "").trim() || !(d.nom || "").trim() || !(d.prenoms || "").trim()) return app.toast("Numéro, nom et prénom(s) sont obligatoires.", "alert");
-    if (d.deliv && d.exp && d.exp < d.deliv) return app.toast("La date d’expiration doit suivre la date de délivrance.", "alert");
+    if ((c.num_required !== 0 && !(d.num || "").trim()) || !(d.nom || "").trim() || !(d.prenoms || "").trim()) return app.toast(c.num_required !== 0 ? "Numéro, nom et prénom(s) sont obligatoires." : "Nom et prénom(s) sont obligatoires.", "alert");
+    if (c.has_expiry !== 0 && d.deliv && d.exp && d.exp < d.deliv) return app.toast("La date d’expiration doit suivre la date de délivrance.", "alert");
     app.go("addDocPhotos", { id: p.id });
   };
   return <>
     <Hdr title="Informations du document" />
     <div className="pad"><div className="row t-s"><span className="pill p-dark">Étape 1/3</span>Informations</div>
       <Field label="Type"><div className="inp" style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--soft)" }}><Icon n={c.icon} s={16} /> {c.label}</div></Field>
-      {f("num", "Numéro du document", "text", c.prefix + "00000000", 1)}
+      {c.description && <p className="t-s" style={{ margin: 0 }}>{c.description}</p>}
+      {f("num", c.num_required !== 0 ? "Numéro du document" : "Numéro du document (facultatif)", "text", c.prefix + "00000000", c.num_required !== 0)}
       <Note>Le numéro est la donnée essentielle au rapprochement avec les documents retrouvés.</Note>
       <div className="grid2">{f("nom", "Nom", "text", "", 1)}{f("prenoms", "Prénom(s)", "text", "", 1)}</div>
-      {f("dob", "Date de naissance", "date")}{f("org", "Organisme émetteur")}
-      <div className="grid2">{f("deliv", "Date de délivrance", "date")}{f("exp", "Expiration", "date")}</div>
+      {f("dob", "Date de naissance", "date")}{c.has_issuer !== 0 && f("org", "Organisme émetteur")}
+      <div className="grid2">{f("deliv", "Date de délivrance", "date")}{c.has_expiry !== 0 && f("exp", "Expiration", "date")}</div>
       <Btn onClick={next}>Continuer</Btn><p className="t-s" style={{ textAlign: "center", margin: 0 }}>Brouillon conservé pendant la session.</p>
     </div>
   </>;
 }
 
 export function AddDocPhotos({ p }) {
-  const app = useApp(), d = draftOf(app);
+  const app = useApp(), d = draftOf(app), c = app.catOf(p.id);
   d.photos = d.photos || {}; d.files = d.files || {};
+  /* photos exigées par le paramétrage de la catégorie (§36) */
+  const missing = [c.recto_required && !d.photos.recto && "recto", c.verso_required && !d.photos.verso && "verso"].filter(Boolean);
   const [, force] = useState(0);
   const pick = k => async file => { const c = await compress(file); d.files[k] = c; d.photos[k] = c.preview; force(x => x + 1); };
   return <>
     <Hdr title="Photographie du document" />
     <div className="pad"><div className="row t-s"><span className="pill p-dark">Étape 2/3</span>Photos recto / verso</div>
-      <div className="grid2">{["recto", "verso"].map(k => <PhotoPick key={k} label={"PHOTO " + k.toUpperCase()} value={d.photos[k]} onPick={pick(k)} />)}</div>
+      <div className="grid2">{["recto", "verso"].map(k => <PhotoPick key={k} label={"PHOTO " + k.toUpperCase() + (c[k + "_required"] ? " *" : "")} value={d.photos[k]} onPick={pick(k)} />)}</div>
+      {missing.length > 0 && <Note c="orange" ic="camera">Pour un(e) {c.label}, la photo {missing.join(" et la photo ")} est obligatoire.</Note>}
       <Note c="green" ic="lock">Les images de vos documents sont privées et ne sont jamais utilisées comme publication publique de perte.</Note>
       <p className="t-s" style={{ margin: 0 }}>Les photos doivent être lisibles. Elles sont compressées pour les connexions faibles.</p>
-      <Btn onClick={() => app.go("addDocRecap", { id: p.id })}>{d.photos.recto ? "Continuer" : "Continuer sans photo"}</Btn>
+      <Btn disabled={missing.length > 0} onClick={() => app.go("addDocRecap", { id: p.id })}>{d.photos.recto || d.photos.verso ? "Continuer" : missing.length ? "Photo requise" : "Continuer sans photo"}</Btn>
     </div>
   </>;
 }

@@ -5,6 +5,8 @@ import { adminApi as api } from "../../lib/api.js";
 import Icon from "../../ui/Icon.jsx";
 import { Page, Panel, Table, Modal, Kpi, P, Bars, HBars, useData, useAct, useAdm, Loading, csv } from "../kit.jsx";
 import { DOC_ST, TRIG, C_ST, FLOW, ECOSYSTEM } from "@shared/constants.js";
+import { FinDay } from "./cash.jsx";
+import { PeriodPanel, AgencyMap } from "./supervision.jsx";
 import { fmtD, fmtDT, fmtT, fcfa, fmtTel } from "@shared/format.js";
 
 const MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -39,6 +41,7 @@ function ServiceDashboard({ s }) {
 
 function GlobalDashboard() {
   const [d] = useData("/admin/dashboard", [], 30000);
+  const [ag] = useData("/admin/agencies");
   const { can } = useAdm();
   if (!d) return <Loading />;
   const k = d.kpi;
@@ -53,6 +56,7 @@ function GlobalDashboard() {
       {k.revenue != null && <Kpi ic="money" label={`Revenus · ${fcfa(k.revenueMonth)} sur 30 j`} value={fcfa(k.revenue)} color="var(--green-d)" bg="var(--green-s)" />}
       <Kpi ic="siren" label={`Alertes SOS en cours · ${k.verifQueue} vérif. en attente`} value={k.sosOpen} color={k.sosOpen ? "#fff" : "var(--red)"} bg={k.sosOpen ? "var(--red)" : "var(--red-s)"} />
     </div>
+    <PeriodPanel />
     <Panel title="Circuit du document · organigramme ID SECOURS" ic="sitemap" right={<span className="t-s">situation en temps réel à chaque étape</span>}>
       <div className="flow">{FLOW.map((s, i) => <div key={s.n} className="flow-step" style={{ "--c": s.c }}>
         <span className="flow-n">{s.n}</span><div className="flow-v num">{d.flux[i]}</div><b>{s.l}</b><span className="t-s">{s.s}</span>
@@ -61,6 +65,7 @@ function GlobalDashboard() {
     </Panel>
     <div className="grid-2">
       <AlertsPanel />
+      {ag && <Panel title="Carte des agences" ic="map" right={can("agencies.manage") && <a href="agencies" className="t-s">Voir la carte complète →</a>}><AgencyMap items={ag.items} height={220} /></Panel>}
       <Panel title="Inscriptions par mois" ic="users"><Bars data={d.months.map(m => ({ l: ym(m.ym), v: m.inscriptions }))} color="#1A7EE0" /></Panel>
       <Panel title="Nouvelles protections par mois" ic="shield"><Bars data={d.months.map(m => ({ l: ym(m.ym), v: m.abonnements }))} color="#13A043" /></Panel>
       {can("finance.view") && <Panel title="Revenus par mois (FCFA)" ic="money"><Bars data={d.months.map(m => ({ l: ym(m.ym), v: m.revenus }))} color="#0B7A32" fmt={v => v >= 1000 ? Math.round(v / 100) / 10 + " k" : v} /></Panel>}
@@ -80,8 +85,8 @@ export function Finance() {
   const [al] = useData("/admin/fin/alerts", [tab], 30000);
   const bar = <>
     {al && <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>{al.alerts.filter(a => a.n > 0).map(a => <button key={a.k} className={`pill p-${a.c}`} style={{ cursor: a.to ? "pointer" : "default", padding: "7px 12px" }} onClick={() => a.to && setTab(a.to)}><Icon n="alert" s={12} /> {a.n} {a.l}</button>)}</div>}
-    <div className="chips">{[["transactions", "Transactions"], ["remboursements", "Remboursements"], ["rapprochements", "Rapprochements"], ["ecarts", "Écarts"]].map(([k, l]) => <button key={k} className={`chip ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div></>;
-  return tab === "remboursements" ? <Refunds bar={bar} /> : tab === "rapprochements" ? <Reconciliations bar={bar} /> : tab === "ecarts" ? <Gaps bar={bar} /> : <Transactions bar={bar} />;
+    <div className="chips">{[["transactions", "Transactions"], ["remboursements", "Remboursements"], ["rapprochements", "Rapprochements"], ["ecarts", "Écarts"], ["cloture", "Clôture du jour"]].map(([k, l]) => <button key={k} className={`chip ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div></>;
+  return tab === "cloture" ? <FinDay bar={bar} /> : tab === "remboursements" ? <Refunds bar={bar} /> : tab === "rapprochements" ? <Reconciliations bar={bar} /> : tab === "ecarts" ? <Gaps bar={bar} /> : <Transactions bar={bar} />;
 }
 
 function Transactions({ bar }) {

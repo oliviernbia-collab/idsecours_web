@@ -6,11 +6,11 @@ import { Wordmark } from "../ui/common.jsx";
 import { SCREENS, PUBLIC } from "./screens/index.js";
 import { fmtLeft } from "@shared/format.js";
 import { api } from "../lib/api.js";
-import { locate } from "../lib/geo.js";
+import { locate, battery } from "../lib/geo.js";
 import { pressKey } from "./screens/sosTriggers.jsx";
 import { SLOGAN, ECOSYSTEM } from "@shared/constants.js";
 
-const NAV_ITEMS = [["home", "home", "Accueil"], ["docs", "doc", "Mes documents"], ["search", "search", "Rechercher"], ["profile", "user", "Profil"]];
+const NAV_ITEMS = [["home", "home", "Accueil"], ["docs", "doc", "Mes documents"], ["search", "search", "Rechercher"], ["notifs", "bell", "Notifications"], ["profile", "user", "Profil"]];
 const NO_FAB = ["incident", "welcome", "signup", "otp", "login", "sosWizard", "forgot", "verified"];
 
 function Clock() {
@@ -23,6 +23,12 @@ function ProtBar() {
   const app = useApp(), pm = app.sos && app.sos.protection;
   const [, tick] = useState(0);
   useEffect(() => { if (!pm || !pm.active) return; const i = setInterval(() => { tick(x => x + 1); if (new Date(pm.until) <= new Date()) app.refreshSos(); }, 1000); return () => clearInterval(i); }, [pm && pm.active, pm && pm.until]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* signal du Mode Protection : position + batterie chaque minute (alerte serveur si le téléphone se tait) */
+  useEffect(() => {
+    if (!app.user || !pm || !pm.active) return;
+    const send = async () => { try { const [loc, bat] = await Promise.all([locate(), battery()]); const r = await api.post("/sos/protection/beat", { loc, battery: bat }); if (!r.active) app.refreshSos(); } catch { /* hors ligne : le serveur alertera si le silence se prolonge */ } };
+    send(); const i = setInterval(send, 60000); return () => clearInterval(i);
+  }, [app.user, pm && pm.active]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!app.user || !pm || !pm.active) return null;
   return <button className="protbar" onClick={() => app.go("sosProtection")}><span className="dotp" /><span className="grow">Mode Protection actif</span><span className="num">{fmtLeft(new Date(pm.until) - Date.now())}</span></button>;
 }
@@ -117,7 +123,7 @@ export default function Shell() {
             <ProtBar />
             <div id="view" ref={viewRef}>{app.ready ? <Screen p={cur.p || {}} key={JSON.stringify(cur)} /> : null}</div>
             {fabOn && <button className={`fab ${navOn ? "" : "lift"}`} onClick={() => app.go("sosImmediate", { now: 1 })} aria-label="Déclencher un SOS immédiat">SOS</button>}
-            {navOn && <nav className="nav">{NAV_ITEMS.map(([k, ic, l]) => <button key={k} className={cur.name === k ? "on" : ""} onClick={() => app.tab(k)}><Icon n={ic} s={21} /><span>{l}</span></button>)}</nav>}
+            {navOn && <nav className="nav">{NAV_ITEMS.map(([k, ic, l]) => <button key={k} className={cur.name === k ? "on" : ""} onClick={() => app.tab(k)}><Icon n={ic} s={21} />{k === "notifs" && app.unread > 0 && <b className="nbdg">{app.unread > 99 ? "99+" : app.unread}</b>}<span>{l}</span></button>)}</nav>}
             <div className={`scrim ${app.sheet ? "on" : ""}`} onClick={app.closeSheet} />
             <div className={`sheet ${app.sheet ? "on" : ""}`} role="dialog" aria-modal="true"><div className="grab" />{app.sheet}</div>
             <div className={`toast ${app.toastS ? "on" : ""}`} role="status">{app.toastS && <><Icon n={app.toastS.ic} s={17} /><span>{app.toastS.msg}</span></>}</div>

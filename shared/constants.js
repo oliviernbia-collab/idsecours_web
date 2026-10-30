@@ -50,7 +50,7 @@ export const PRIVACY = ["Les informations privées du propriétaire et du dépos
 
 /* ---------- SOS ---------- */
 export const SOS_FLOW = ["CRÉÉ", "DÉCLENCHÉ", "TRANSMISSION_EN_COURS", "ALERTES_ENVOYÉES", "PRIS_EN_CHARGE", "INTERVENTION_EN_COURS", "RÉSOLU", "CLÔTURÉ"];
-export const TRIG = { immediat: "SOS immédiat (bouton)", invisible: "SOS invisible (boutons physiques)", taps: "SOS invisible (tapotements)", vocal: "Code vocal (Mode Protection)", bluetooth: "Déclencheur Bluetooth", contrainte: "Code sous contrainte", test: "Test du SOS" };
+export const TRIG = { immediat: "SOS immédiat (bouton)", invisible: "SOS invisible (boutons physiques)", taps: "SOS invisible (tapotements)", vocal: "Code vocal (Mode Protection)", bluetooth: "Déclencheur Bluetooth", contrainte: "Code sous contrainte", test: "Test du SOS", silence: "Mode Protection · téléphone injoignable" };
 export const C_ST = { ATTENTE: ["En attente", "grey"], ENVOYEE: ["Notification envoyée", "blue"], LIVREE: ["Livrée", "blue"], OUVERTE: ["Ouverte", "orange"], PRIS: ["Prend en charge", "green"], REFUSEE: ["Indisponible", "red"], EXPIREE: ["Sans réponse · expirée", "red"], TEST_OK: ["Test reçu", "green"] };
 export const DIAG_ROWS = [["app", "SOS application"], ["notif", "Notifications"], ["gps", "GPS"], ["bg", "Fonctionnement arrière-plan"], ["lock", "Écran verrouillé"], ["btn", "Boutons physiques"], ["taps", "Tapotements"], ["vocal", "Code vocal"], ["bt", "Bluetooth"], ["sms", "SMS de secours"]];
 export const KEYL = { "V+": "Volume +", "V-": "Volume −", "P": "Latéral" };

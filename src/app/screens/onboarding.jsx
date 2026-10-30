@@ -38,6 +38,7 @@ export function Login() {
       <Btn type="submit" onClick={submit}>Se connecter</Btn>
       <button type="button" className="btn sm" style={{ alignSelf: "center", color: "var(--blue-d)" }} onClick={() => app.go("forgot")}>Mot de passe oublié / activer mon compte</button>
       <button type="button" className="btn sm" style={{ alignSelf: "center" }} onClick={() => app.go("signup")}>Pas encore de compte ? Créer mon compte</button>
+      <a href="/admin" className="t-s" style={{ alignSelf: "center" }}>Personnel ID SECOURS ? Espace agents →</a>
     </form>
   </>;
 }

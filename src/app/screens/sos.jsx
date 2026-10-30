@@ -5,6 +5,7 @@ import { api } from "../../lib/api.js";
 import Icon from "../../ui/Icon.jsx";
 import { Hdr, Btn, Field, Input, Select, Chk, Note, Hero, Kv, Pill, Spinner, Empty, Switch, MapSVG, useLoad } from "../../ui/common.jsx";
 import { triggerSOS, pressKey } from "./sosTriggers.jsx";
+import { locate, battery } from "../../lib/geo.js";
 import { SOS_FLOW, TRIG, C_ST, DIAG_ROWS, KEYL, RELATIONS, invLabel, BT_FOUND } from "@shared/constants.js";
 import { fmtT, fmtDT, fmtLeft, norm, fmtTel } from "@shared/format.js";
 
@@ -178,17 +179,17 @@ export function SosProtection() {
     return () => { rec.current = null; try { r.stop(); } catch { /* ignore */ } setListening(false); };
   }, [pm && pm.active, vOk]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!s) return <Spinner />;
-  const start = async () => { const m = +custom > 0 ? Math.min(720, +custom) : dur; try { const r = await api.post("/sos/protection", { minutes: m }); app.setSos(r.sos); app.toast("Mode Protection activé"); } catch (e) { app.toast(e.message, "alert"); } };
+  const start = async () => { const m = +custom > 0 ? Math.min(720, +custom) : dur; try { const [loc, bat] = await Promise.all([locate(), battery()]); const r = await api.post("/sos/protection", { minutes: m, loc, battery: bat }); app.setSos(r.sos); app.toast("Mode Protection activé"); } catch (e) { app.toast(e.message, "alert"); } };
   const stop = async () => { const r = await api.del("/sos/protection"); app.setSos(r.sos); app.toast("Mode Protection arrêté"); };
   if (!pm.active) return <><Hdr title="Mode Protection" /><div className="pad">
     <div className="t-s">Pour les périodes où vous vous sentez davantage exposé : trajet nocturne, déplacement isolé, rendez-vous avec une personne inconnue, voyage, retour tardif…</div>
     <div className="t-label">Durée</div><div className="grid2">{[[15, "15 minutes"], [30, "30 minutes"], [60, "1 heure"], [120, "2 heures"]].map(([m, l]) => <button key={m} className={`plan ${dur === m ? "sel" : ""}`} style={{ alignItems: "center", padding: 12 }} onClick={() => setDur(m)}><b>{l}</b></button>)}</div>
     <Field label="Durée personnalisée (minutes)" id="pm-custom"><Input id="pm-custom" type="number" min="1" max="720" placeholder="Ex. : 45" value={custom} onChange={setCustom} /></Field>
     <Btn c="dark" ic="shield" onClick={start}>Activer Mode Protection</Btn>
-    <Note>Pendant le Mode Protection, la dernière position est conservée : même si le téléphone s’éteint, l’alerte peut être transmise avec la dernière géolocalisation.</Note>
+    <Note>Pendant le Mode Protection, votre téléphone envoie sa position à ID SECOURS chaque minute. S’il ne donne plus aucun signal pendant {Math.round(((s.protection && s.protection.silenceS) || 300) / 60)} minutes (téléphone éteint, batterie vide, réseau coupé), l’alerte est déclenchée par le serveur avec la dernière position connue, son heure et sa précision.</Note>
   </div></>;
   return <><Hdr title="Mode Protection" /><div className="pad">
-    <div className="card" style={{ background: "var(--ink)", color: "#fff", textAlign: "center" }}><div className="t-label" style={{ color: "#9FB0A7" }}>Mode Protection actif</div><div className="num" style={{ font: "800 44px var(--f-display)", margin: "6px 0" }}>{fmtLeft(new Date(pm.until) - Date.now())}</div><div style={{ fontSize: 12.5, color: "#C9D2CD" }}>Expire automatiquement à {fmtT(pm.until)}</div></div>
+    <div className="card" style={{ background: "var(--ink)", color: "#fff", textAlign: "center" }}><div className="t-label" style={{ color: "#9FB0A7" }}>Mode Protection actif</div><div className="num" style={{ font: "800 44px var(--f-display)", margin: "6px 0" }}>{fmtLeft(new Date(pm.until) - Date.now())}</div><div style={{ fontSize: 12.5, color: "#C9D2CD" }}>Expire automatiquement à {fmtT(pm.until)}{pm.beat ? <> · dernier signal envoyé à {fmtT(pm.beat)}</> : null}</div></div>
     <div className="card col"><div className="row"><span style={{ color: "var(--red)" }}><Icon n="mic" s={20} /></span><div className="grow"><div className="t-h" style={{ fontSize: 14 }}>Code vocal</div><div className="t-s">{vOk ? (listening ? "À l’écoute · détection locale sur l’appareil" : "Écoute automatique indisponible sur ce navigateur") : ""}</div></div>{listening && <Pill c="green" dot>Écoute</Pill>}</div>
       {vOk ? <><div className="t-s">Phrase configurée : <b style={{ color: "var(--ink)" }}>« {s.voice.phrase} »</b></div>
         {!listening && <><Field label="Saisir la phrase entendue" id="vc-say"><Input id="vc-say" placeholder="Prononcez votre phrase…" value={said} onChange={setSaid} /></Field><button className="btn red sm" style={{ width: "100%" }} onClick={() => norm(said) === norm(s.voice.phrase) ? triggerSOS(app, "vocal") : app.toast("Phrase non reconnue · aucun déclenchement.", "info")}><Icon n="mic" s={14} /> Valider la phrase</button></>}</>

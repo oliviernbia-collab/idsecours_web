@@ -6,7 +6,7 @@ const Ctx = createContext(null);
 export const useApp = () => useContext(Ctx);
 
 const TOKEN = "ids_token", STACK = "ids_stack";
-const NAV = ["home", "docs", "search", "profile"];
+const NAV = ["home", "docs", "search", "notifs", "profile"]; // barre de navigation à 5 onglets (§24)
 
 export function AppProvider({ children }) {
   const [user, setUser] = useState(null);
